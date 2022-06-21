@@ -261,7 +261,7 @@ void driving()
 }
 
 void straight() //양쪽 차선이 검출된 경우
-{
+{    
     if (ir_sensing(IR_R) >= detect_ir && ir_sensing(IR_L) >= detect_ir) //차선이 검출되지 않을 경우 직진
     {
         compute_steering = 0;
@@ -374,11 +374,13 @@ void RearParking(){
 void avoid_collision() // TODO Implement avoid collision function
 {
     //turn left 90deg
-    //just use driving
+    //just use driving.
+    
 }
 
 void finish() // TODO Implement finish() functoin
 {
+    //break loop, to finish program.
     exit(0);
 }
 
@@ -412,6 +414,14 @@ void setup()
 
     SetSteering(0);
     SetSpeed(0);
+    
+    //시작 정차
+    for (i) {
+        if (GetDistance(FC_TRIG, FC_ECHO) > center_detect) {
+            break;
+        }
+    }
+            
 }
 
 void loop()
