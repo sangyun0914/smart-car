@@ -223,33 +223,35 @@ void driving()
     if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) // 양쪽 차선이 검출된 경우
     {
         count_lines++; // Increment count_lines
-    }
+        
+        if (count_lines == 1) // First line
+        {
+            ParallelParking();
+        }
 
-    // TODO optimize using lookup table if needed
-    else if (count_lines == 1) // First line
-    {
-        ParallelParking();
-    }
+        else if (count_lines == 2 || count_lines == 3) // Second, Third line
+        {
+            SetSpeed(0);
+            delay(PAUSE_TIME);
+            SetSpeed(0.5);
+            SetSteering(0);
+            delay(100);
+        }
 
-    else if (count_lines == 2 || count_lines == 3) // Second, Third line
-    {
-        SetSpeed(0);
-        delay(PAUSE_TIME);
-    }
+        else if (count_lines == 4) // Fourth line
+        {
+            RearParking();
+        }
 
-    else if (count_lines == 4) // Fourth line
-    {
-        RearParking();
-    }
+        else if (count_lines == 5) // Fifth line
+        {
+            avoid_collision();
+        }
 
-    else if (count_lines == 5) // Fifth line
-    {
-        avoid_collision();
-    }
-
-    else if (count_lines == 6)
-    {
-        finish();
+        else if (count_lines == 6)
+        {
+            finish();
+        }
     }
 
     straight();
@@ -346,10 +348,14 @@ void PararlleParking() {
 }
 
 void RearParking(){
+    
+    // turn left 90deg
     DifRotation(1, 1);
     delay(1200);
     SetSpeed(0);
     delay(300);
+    
+    //back till detect
     for (i) {
       SetSteering(0);
       SetSpeed(-1);
@@ -358,17 +364,22 @@ void RearParking(){
         delay(PAUSE_TIME);
       }
     }
+    
+    //go forward, to escape detect
     SetSteering(0);
     SetSpeed(1);
-    delay(500);
+    delay(200);
 }
 
 void avoid_collision() // TODO Implement avoid collision function
 {
+    //turn left 90deg
+    //just use driving
 }
 
 void finish() // TODO Implement finish() functoin
 {
+    exit(0);
 }
 
 void setup()
