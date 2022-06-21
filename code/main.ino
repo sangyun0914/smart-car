@@ -188,8 +188,7 @@ void driving()
     // TODO optimize using lookup table if needed
     else if (count_lines == 1) // First line
     {
-        SetSpeed(0);
-        delay(PAUSE_TIME);
+
         parallel_park();
     }
 
@@ -201,15 +200,13 @@ void driving()
 
     else if (count_lines == 4) // Fourth line
     {
-        SetSpeed(0);
-        delay(PAUSE_TIME);
+
         perpendicular_park();
     }
 
     else if (count_lines == 5) // Fifth line
     {
-        SetSpeed(0);
-        delay(PAUSE_TIME);
+
         avoid_collision();
     }
 
