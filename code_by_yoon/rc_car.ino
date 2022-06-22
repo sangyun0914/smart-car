@@ -63,6 +63,8 @@ float compute_speed;
 float max_pwm;
 float min_pwm;
 
+int start = 0;
+
 // 초음파 거리측정
 float GetDistance(int trig, int echo)
 {
@@ -213,6 +215,12 @@ void DifRotation(float speed, float steering) {
 
 void driving()
 {
+        //시작 정차
+    for (start == 0) {
+        if (GetDistance(FC_TRIG, FC_ECHO) > center_detect) {
+            start ++
+            break;
+        }
     compute_steering = cur_steering;
     compute_speed = cur_speed;
 
@@ -415,10 +423,7 @@ void setup()
     SetSteering(0);
     SetSpeed(0);
     
-    //시작 정차
-    for (i) {
-        if (GetDistance(FC_TRIG, FC_ECHO) > center_detect) {
-            break;
+
         }
     }
             
