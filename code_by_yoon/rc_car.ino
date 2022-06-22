@@ -289,14 +289,15 @@ void straight() //양쪽 차선이 검출된 경우
     }
 }
 
-void PararlleParking() {
+void ParallelParking() {
     //go forward till right wall disappear
     for (j) {
       SetSteering(0);
       SetSpeed(0.5);
       delay(25);
-      if (left < 10 && right > 10) {
-        break;
+      if (left < 20 && right > 20) {
+          break;
+      }
     }
 
 
