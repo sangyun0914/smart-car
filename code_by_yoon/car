@@ -37,7 +37,7 @@ int state = 0;
 int count_lines = 0;
 
 // 자동차 튜닝 파라미터 =====================================================================
-int detect_ir = 26; // 검출선이 흰색과 검정색 비교
+int detect_ir = 25; // 검출선이 흰색과 검정색 비교
 
 int punch_pwm = 200; // 정지 마찰력 극복 출력 (0 ~ 255)
 int punch_time = 50; // 정지 마찰력 극복 시간 (단위 msec)
@@ -46,7 +46,7 @@ int stop_time = 300; // 전진후진 전환 시간 (단위 msec)
 int max_ai_pwm = 130; // 자율주행 모터 최대 출력 (0 ~ 255)
 int min_ai_pwm = 70;  // 자율주행 모터 최소 출력 (0 ~ 255)
 
-int angle_offset = -6; // 서보 모터 중앙각 오프셋 (단위: 도)
+int angle_offset = -8; // 서보 모터 중앙각 오프셋 (단위: 도)
 int angle_limit = 55;  // 서보 모터 회전 제한 각 (단위: 도)
 
 int center_detect = 200; // 전방 감지 거리 (단위: mm)
@@ -243,6 +243,12 @@ void ParallelParking() {
     SetSpeed(0.5);
     delay(500);
     while(1) {
+      delay(20);
+      if (GetDistance(R_TRIG, R_ECHO) <= 180){
+        break;
+      }
+    }
+    while(1) {
       SetSteering(0);
       SetSpeed(0.5);
       delay(10);
@@ -252,7 +258,7 @@ void ParallelParking() {
     }
     SetSpeed(-1);
     SetSteering(0);
-    delay(300);
+    delay(400);
     SetSpeed(0.5);
     SetSteering(1);
     delay(1000);
@@ -334,14 +340,17 @@ void avoid_collision() // TODO Implement avoid collision function
 void finish() // TODO Implement finish() functoin
 {
     //break loop, to finish program.
+    SetSpeed(0);
+    SetSteering(0);
     exit(0);
 }
 
 void driving()
 {
         //시작 정차
-    while(1) {
+    while(start == 0) {
         if (GetDistance(FC_TRIG, FC_ECHO) > center_detect) {
+            SetSpeed(0);
             start ++;
             break;
         }
@@ -430,24 +439,8 @@ void setup()
 
 int i;
 void loop(){
-   // driving();
+  driving();
 
-  while(i == 0){
-   RearParking();
-    i++;
-  }
-   straight();
-
-    SetSpeed(compute_speed);
-    SetSteering(compute_steering);
-
-
-   
-
-/*   
-   SetSpeed(0);
-   exit(0);
-  */ 
 
 
 
