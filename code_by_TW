@@ -323,7 +323,7 @@ void finish() // TODO Implement finish() functoin
 void driving()
 {
         //시작 정차
- /*   center = GetDistance(FC_TRIG, FC_ECHO);
+   center = GetDistance(FC_TRIG, FC_ECHO);
     left = GetDistance(L_TRIG, L_ECHO);
     right = GetDistance(R_TRIG, R_ECHO);
     while(start == 0) {
@@ -334,7 +334,7 @@ void driving()
     }
     compute_steering = cur_steering;
     compute_speed = cur_speed;
-*/
+
     
     SetSpeed(0.1); //기본은 전진
     
