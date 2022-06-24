@@ -33,6 +33,7 @@ float center;
 float left;
 float right;
 
+int count = 0;
 int state = 0;
 int count_lines = 0;
 
@@ -279,26 +280,36 @@ void ParallelParking() {
 
 void RearParking(){
     
-    // turn left 90deg
-    DifRotation(1, 1);
-    delay(1200);
+    SetSteering(0);
     SetSpeed(0);
+    delay(100);
+    SetSpeed(1);
     delay(300);
-    
-    //back till detect
-    while(1){
-      SetSteering(0);
-      SetSpeed(-1);
-      if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) {
-        SetSpeed(0);
-        delay(PAUSE_TIME);
+    while(1) {
+      SetSpeed(0.5);
+      SetSteering(-1);
+      delay(20);
+      if (ir_sensing(IR_R) <= detect_ir){
+        count++;
+        SetSteering(1);
+        SetSpeed(-0.5);
+        delay(300);
+        break;
       }
+      if (count == 2) {
+        break;
+      }
+    }
+    while (ir_sensing(IR_R) > detect_ir && ir_sensing(IR_L) > detect_ir){
+      SetSteering(0);
+      SetSpeed(-0.5);
+      delay(20);
     }
     
     //go forward, to escape detect
     SetSteering(0);
     SetSpeed(1);
-    delay(200);
+    delay(100);
 }
 
 void avoid_collision() // TODO Implement avoid collision function
@@ -419,7 +430,7 @@ void loop(){
    // driving();
 
   while(i == 0){
-   avoid_collision();
+   RearParking();
     i++;
   }
    straight();
@@ -434,6 +445,10 @@ void loop(){
    SetSpeed(0);
    exit(0);
   */ 
+
+
+
+
 
 
    
