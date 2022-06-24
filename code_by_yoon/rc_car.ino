@@ -213,14 +213,125 @@ void DifRotation(float speed, float steering) {
   
 }
 
+
+
+void straight() //양쪽 차선이 검출된 경우
+{    
+    if (ir_sensing(IR_R) >= detect_ir && ir_sensing(IR_L) >= detect_ir) //차선이 검출되지 않을 경우 직진
+    {
+        compute_steering = 0;
+        compute_speed = 1;
+    }
+
+    else if (ir_sensing(IR_R) <= detect_ir) // 오른쪽 차선이 검출된 경우
+    {
+        compute_steering = -1;
+        compute_speed = 0.1;
+    }
+
+    else if (ir_sensing(IR_L) <= detect_ir) // 왼쪽 차선이 검출된 경우
+    {
+        compute_steering = 1;
+        compute_speed = 0.1;
+    }
+}
+
+void ParallelParking() {
+     //이 아래 나중 삭제 테스트용 추가 라인
+     right = GetDistance(R_TRIG, R_ECHO);
+     left = GetDistance(L_TRIG, L_ECHO);
+    //go forward till right wall disappear
+    while(1) {
+      SetSteering(0);
+      SetSpeed(0.5);
+      delay(10);
+      if (left < 50 && right > 50) {
+        SetSpeed(0);
+        delay(10);
+        break;
+      }
+    }
+    SetSpeed(-1);
+    SetSteering(0);
+    delay(300);
+    SetSpeed(0.5);
+    SetSteering(1);
+    delay(1000);
+    SetSteering(0);
+    delay(750);
+    SetSteering(-1);
+    delay(1000);
+    SetSpeed(0);
+    SetSteering(0);
+    delay(100);
+    SetSpeed(-0.5);
+    delay(800);
+
+    SetSpeed(0);
+    delay(2000);
+    SetSpeed(0.5);
+    SetSteering(-1);
+    delay(1200);
+    SetSteering(0);
+    delay(600);
+    
+}
+
+void RearParking(){
+    
+    // turn left 90deg
+    DifRotation(1, 1);
+    delay(1200);
+    SetSpeed(0);
+    delay(300);
+    
+    //back till detect
+    while(1){
+      SetSteering(0);
+      SetSpeed(-1);
+      if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) {
+        SetSpeed(0);
+        delay(PAUSE_TIME);
+      }
+    }
+    
+    //go forward, to escape detect
+    SetSteering(0);
+    SetSpeed(1);
+    delay(200);
+}
+
+void avoid_collision() // TODO Implement avoid collision function
+{
+    //turn left 90deg
+    //just use driving.
+    SetSpeed(0.5);
+    SetSteering(0);
+    delay(100);
+    SetSteering(-1);
+    delay(1100);
+    SetSteering(0);
+    delay(1000);
+    
+    
+    
+}
+
+void finish() // TODO Implement finish() functoin
+{
+    //break loop, to finish program.
+    exit(0);
+}
+
 void driving()
 {
         //시작 정차
-    for (start == 0) {
+    while(1) {
         if (GetDistance(FC_TRIG, FC_ECHO) > center_detect) {
-            start ++
+            start ++;
             break;
         }
+    }
     compute_steering = cur_steering;
     compute_speed = cur_speed;
 
@@ -268,131 +379,6 @@ void driving()
     SetSteering(compute_steering);
 }
 
-void straight() //양쪽 차선이 검출된 경우
-{    
-    if (ir_sensing(IR_R) >= detect_ir && ir_sensing(IR_L) >= detect_ir) //차선이 검출되지 않을 경우 직진
-    {
-        compute_steering = 0;
-        compute_speed = 1;
-    }
-
-    else if (ir_sensing(IR_R) <= detect_ir) // 오른쪽 차선이 검출된 경우
-    {
-        compute_steering = -1;
-        compute_speed = 0.1;
-    }
-
-    else if (ir_sensing(IR_L) <= detect_ir) // 왼쪽 차선이 검출된 경우
-    {
-        compute_steering = 1;
-        compute_speed = 0.1;
-    }
-}
-
-void ParallelParking() {
-    //go forward till right wall disappear
-    for (j) {
-      SetSteering(0);
-      SetSpeed(0.5);
-      delay(25);
-      if (left < 20 && right > 20) {
-          break;
-      }
-    }
-
-
-    //park - turn right 45deg
-    DifRotation(1, 1);
-    delay(600);
-
-    SetSpeed(0);
-    delay(300);
-
-    //park - forward
-    SetSteering(0);
-    delay(300);
-    SetSpeed(1);
-    delay(150);
-
-    //park - turn left 45deg
-    SetSpeed(0);
-    delay(300);
-    SetSteering(-1);
-    delay(300);
-
-    DifRotation(1, -1);
-    delay(100);
-    
-    SetSpeed(0);
-    delay(300);
-
-    //park - back
-    SetSteering(0);
-    delay(300);
-    SetSpeed(-1);
-    delay(300);
-
-    //park - fin pause
-    delay(3000);
-
-    //out - left 45deg
-    DifRotation(1, -1);
-    delay(600);
-
-    // out - forward
-    SetSpeed(0);
-    delay(300);
-
-    SetSteering(0);
-    SetSpeed(1);
-    delay(150);
-
-    // out - right 45deg
-    SetSpeed(0);
-    SetSteering(1);
-    delay(300);
-
-    DifRotation(1, 1); 
-    delay(600);
-}
-
-void RearParking(){
-    
-    // turn left 90deg
-    DifRotation(1, 1);
-    delay(1200);
-    SetSpeed(0);
-    delay(300);
-    
-    //back till detect
-    for (i) {
-      SetSteering(0);
-      SetSpeed(-1);
-      if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) {
-        SetSpeed(0);
-        delay(PAUSE_TIME);
-      }
-    }
-    
-    //go forward, to escape detect
-    SetSteering(0);
-    SetSpeed(1);
-    delay(200);
-}
-
-void avoid_collision() // TODO Implement avoid collision function
-{
-    //turn left 90deg
-    //just use driving.
-    
-}
-
-void finish() // TODO Implement finish() functoin
-{
-    //break loop, to finish program.
-    exit(0);
-}
-
 void setup()
 {
 
@@ -428,7 +414,27 @@ void setup()
             
 }
 
-void loop()
-{
-    driving();
+int i;
+void loop(){
+   // driving();
+
+  while(i == 0){
+   avoid_collision();
+    i++;
+  }
+   straight();
+
+    SetSpeed(compute_speed);
+    SetSteering(compute_steering);
+
+
+   
+
+/*   
+   SetSpeed(0);
+   exit(0);
+  */ 
+
+
+   
 }
