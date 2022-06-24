@@ -46,7 +46,7 @@ int stop_time = 300; // 전진후진 전환 시간 (단위 msec)
 int max_ai_pwm = 130; // 자율주행 모터 최대 출력 (0 ~ 255)
 int min_ai_pwm = 70;  // 자율주행 모터 최소 출력 (0 ~ 255)
 
-int angle_offset = 25; // 서보 모터 중앙각 오프셋 (단위: 도)
+int angle_offset = -6; // 서보 모터 중앙각 오프셋 (단위: 도)
 int angle_limit = 55;  // 서보 모터 회전 제한 각 (단위: 도)
 
 int center_detect = 200; // 전방 감지 거리 (단위: mm)
@@ -365,23 +365,30 @@ void driving()
           SetSpeed(0);
           if(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) //T자 주차구나
           {
-            SetSpeed(-0.1);
-            if(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) //다시 정지선으로 돌아와서 T자 주차 시작
-            { 
+            while(1)
+            {
+              SetSpeed(-0.1);
+              if(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) //다시 정지선으로 돌아와서 T자 주차 시작
+             { 
               SetSpeed(0);
               delay(500);
               T_Parking();
-            }
-              
+             }
+             break;
+            } 
           }
           else
           {
-            SetSpeed(-0.1);
-            if(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) //다시 정지선으로 돌아와서 회피운전 시작
-            { 
+            while(1)
+            {
+              SetSpeed(-0.1);
+              if(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) //다시 정지선으로 돌아와서 T자 주차 시작
+             { 
               SetSpeed(0);
               delay(500);
               avoid_collision();
+             }
+             break;
             }
           }
            
@@ -428,9 +435,10 @@ void setup()
 }
 
 void loop(){
- // driving();
-  Serial.println(GetDistance(FC_TRIG, FC_ECHO));
+  driving();
+/*  Serial.println(GetDistance(FC_TRIG, FC_ECHO));
   delay(100);
+*/
 /* Serial.println(abs(GetDistance(R_TRIG, R_ECHO)-GetDistance(L_TRIG, L_ECHO)));
  delay(100);*/
 }
