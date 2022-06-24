@@ -25,7 +25,7 @@ const int L_ECHO = A1;  // 좌측 초음파 센서 ECHO 핀
 const int R_TRIG = 2;   // 우측 초음파 센서 TRIG 핀
 const int R_ECHO = A5;  // 우측 초음파 센서 ECHO 핀
 
-const int MAX_DISTANCE = 2000; // 초음파 센서의 최대 감지거리
+const int MAX_DISTANCE = 2000; // 초음파 센서의 최대 감지거리 = 200cm
 
 const int PAUSE_TIME = 2000;
 
@@ -46,7 +46,7 @@ int stop_time = 300; // 전진후진 전환 시간 (단위 msec)
 int max_ai_pwm = 130; // 자율주행 모터 최대 출력 (0 ~ 255)
 int min_ai_pwm = 70;  // 자율주행 모터 최소 출력 (0 ~ 255)
 
-int angle_offset = -6; // 서보 모터 중앙각 오프셋 (단위: 도)
+int angle_offset = 27; // 서보 모터 중앙각 오프셋 (단위: 도)
 int angle_limit = 55;  // 서보 모터 회전 제한 각 (단위: 도)
 
 int center_detect = 200; // 전방 감지 거리 (단위: mm)
@@ -174,6 +174,46 @@ void SetSpeed(float speed)
     cur_speed = speed;
 }
 
+void DifRotation(float speed, float steering)
+{
+    // speed 에 양수가 오면 전진 else 후진
+    // steering 에 양수 오면 우회전 아니면 좌회전 (전진 기준)
+
+    // 전축 회전
+    cur_steering = constrain(steering, -1, 1); // constrain -1~ 1 값으로 제한
+
+    float angle = cur_steering * angle_limit;
+    int servoAngle = angle + 90;
+    servoAngle += angle_offset;
+
+    servoAngle = constrain(servoAngle, 0, 180);
+    servo.write(servoAngle);
+
+    speed = constrain(speed, -1, 1);
+    int pwm = abs(speed) * 225; // 0 ~ 255
+
+    if (speed > 0)
+    {
+        analogWrite(M1_PWM, pwm);
+        digitalWrite(M1_DIR1, HIGH);
+        digitalWrite(M1_DIR2, LOW);
+
+        analogWrite(M2_PWM, pwm);
+        digitalWrite(M2_DIR1, LOW);
+        digitalWrite(M2_DIR2, HIGH);
+    }
+    else if (speed < 0)
+    {
+        analogWrite(M1_PWM, pwm);
+        digitalWrite(M1_DIR1, LOW);
+        digitalWrite(M1_DIR2, HIGH);
+
+        analogWrite(M2_PWM, pwm);
+        digitalWrite(M2_DIR1, HIGH);
+        digitalWrite(M2_DIR2, LOW);
+    }
+}
+
 void driving()
 {
     compute_steering = cur_steering;
@@ -183,28 +223,26 @@ void driving()
     left = GetDistance(L_TRIG, L_ECHO);
     right = GetDistance(R_TRIG, R_ECHO);
 
-    straight();
-
     if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) // 양쪽 차선이 검출된 경우
-    {
-        count_lines++; // Increment count_lines
-    }
+        count_lines++;                                                  // Increment count_lines
 
-    // TODO optimize using lookup table if needed
-    else if (count_lines == 1) // First line
+    if (count_lines == 1) // First line
     {
-        parallel_park();
+        ParallelParking();
     }
 
     else if (count_lines == 2 || count_lines == 3) // Second, Third line
     {
         SetSpeed(0);
         delay(PAUSE_TIME);
+        SetSpeed(0.5);
+        SetSteering(0);
+        delay(100);
     }
 
     else if (count_lines == 4) // Fourth line
     {
-        perpendicular_park();
+        // RearParking();
     }
 
     else if (count_lines == 5) // Fifth line
@@ -216,6 +254,8 @@ void driving()
     {
         finish();
     }
+
+    straight();
 
     SetSpeed(compute_speed);
     SetSteering(compute_steering);
@@ -242,73 +282,97 @@ void straight() //양쪽 차선이 검출된 경우
     }
 }
 
-void parallel_park() // [Parallel Parking] =======================================================
+void ParallelParking()
 {
-    Serial.println("right sensor:", right);
-    while (right > side_detect) // Move until right sensor detects wall
-    {
-        SetSteering(0);
-        SetSpeed(1);
-    }
-    right = GetDistance(R_TRIG, R_ECHO);
-
-    while (right <= side_detect) // Move onto parking space
-    {
-        SetSteering(0);
-        SetSpeed(1);
-    }
-    right = GetDistance(R_TRIG, R_ECHO);
-
-    while (right > side_detect) // Move until right sensor detects wall
-    {
-        SetSpeed(1);
-    }
-
-    // Consider using for loop for smoother transition
-
-    SetSpeed(0);      // TODO Consider changing speed to overcome static friction error
-    SetSteering(0.8); // TODO Change angle for rightward turn
-
-    SetSpeed(-0.1);
-    delay(400); // TODO Change speed/time for reverse
-
-    // SetSpeed(0.1);     // Detected Wall
-    SetSteering(-0.8); // TODO Change angle for leftward turn
-
-    SetSpeed(-0.1);
-    delay(400); // TODO Change speed/time for reverse
-
-    SetSpeed(0);
-    delay(PAUSE_TIME); // Stop car
-
-    SetSpeed(0.1); // Reverse action
-    delay(400);
-
-    SetSteering(0.8);
-    SetSpeed(0.1);
-    delay(400);
-
     SetSteering(0);
     SetSpeed(1);
-}
+    delay(3000);
 
-void perpendicular_park() // [Perpendicular Parking] ============================================
-{
-    SetSpeed(0.1);
-    SetSteering(-1);
-    delay(500); // TODO change rightward turn angle/time
+    while (true) // Move until right sensor detects wall
+    {
+        if (GetDistance(R_TRIG, R_ECHO) <= 180)
+            break;
+        SetSteering(0);
+        SetSpeed(1);
+    }
 
     SetSteering(0);
-    SetSpeed(-0.1);
-    delay(700); // TODO change reverse time
+    SetSpeed(0);
+    delay(500);
+
+    // park - turn right 45deg
+    SetSteering(0.8);
+    SetSpeed(-1);
+    delay(1000);
+
+    SetSteering(0);
+    SetSpeed(-1);
+    delay(500);
+
+    SetSteering(-0.8);
+    SetSpeed(-1);
+    delay(700);
+
+    SetSteering(0);
+    SetSpeed(0);
+    delay(1000);
 }
+
+/*
+    SetSpeed(0);
+    delay(3000); // 3초 정지, 주차 완료
+
+    SetSpeed(1); //핸들 여전히 왼쪽으로 꺾인 상태에서 그대로 다시 나오기
+    delay(1000);
+    DifRotation(0, 0); //잠깐 정지해서 핸들 가운데로
+    delay(300);
+
+    SetSpeed(1); // 핸들 가운데에 놓은 상태에서 앞으로 조금 전진
+    delay(500);
+    DifRotation(1, 0.8); //핸들 오른쪽으로 꺾어서 평행주차 끝내기
+    delay(1000);
+    DifRotation(0, 0); //핸들 가운데로 다시 정렬
+
+}
+/*
+void RearParking()
+{
+
+    // turn left 90deg
+    DifRotation(1, 1);
+    delay(1200);
+    SetSpeed(0);
+    delay(300);
+
+    // back till detect
+    for (i)
+    {
+        SetSteering(0);
+        SetSpeed(-1);
+        if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir)
+        {
+            SetSpeed(0);
+            delay(PAUSE_TIME);
+        }
+    }
+
+    // go forward, to escape detect
+    SetSteering(0);
+    SetSpeed(1);
+    delay(200);
+}
+*/
 
 void avoid_collision() // TODO Implement avoid collision function
 {
+    // turn left 90deg
+    // just use driving.
 }
 
 void finish() // TODO Implement finish() functoin
 {
+    // break loop, to finish program.
+    exit(0);
 }
 
 void setup()
@@ -339,11 +403,21 @@ void setup()
     max_pwm = max_ai_pwm;
     min_pwm = min_ai_pwm;
 
-    SetSteering(0);
-    SetSpeed(0);
+    ParallelParking();
+
+    /*
+        //시작 정차
+        while (true)
+        {
+            if (GetDistance(FC_TRIG, FC_ECHO) > center_detect)
+            {
+                break;
+            }
+        }
+        */
 }
 
 void loop()
 {
-    driving();
+    // ParallelParking();
 }
