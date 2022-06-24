@@ -46,7 +46,7 @@ int stop_time = 300; // 전진후진 전환 시간 (단위 msec)
 int max_ai_pwm = 130; // 자율주행 모터 최대 출력 (0 ~ 255)
 int min_ai_pwm = 70;  // 자율주행 모터 최소 출력 (0 ~ 255)
 
-int angle_offset = -6; // 서보 모터 중앙각 오프셋 (단위: 도)
+int angle_offset = 10; // 서보 모터 중앙각 오프셋 (단위: 도)
 int angle_limit = 55;  // 서보 모터 회전 제한 각 (단위: 도)
 
 int center_detect = 200; // 전방 감지 거리 (단위: mm)
@@ -176,109 +176,8 @@ void SetSpeed(float speed)
     cur_speed = speed;
 }
 
-void DifRotation(float speed, float steering) {
-  // speed 에 양수가 오면 전진 else 후진
-  // steering 에 양수 오면 우회전 아니면 좌회전 (전진 기준)
 
-    // 전축 회전
-    cur_steering = constrain(steering, -1, 1); // constrain -1~ 1 값으로 제한
 
-    float angle = cur_steering * angle_limit;
-    int servoAngle = angle + 90;
-    servoAngle += angle_offset;
-
-    servoAngle = constrain(servoAngle, 0, 180);
-    servo.write(servoAngle);
-
-    int pwm = abs(speed) * 225;  // 0 ~ 255
-
-    if (speed > 0) {
-      analogWrite(M1_PWM, pwm);
-      digitalWrite(M1_DIR1, HIGH);
-      digitalWrite(M1_DIR2, LOW);
-
-      analogWrite(M2_PWM, pwm);
-      digitalWrite(M2_DIR1, LOW);
-      digitalWrite(M2_DIR2, HIGH);
-    }
-    else if (speed < 0) {
-      analogWrite(M1_PWM, pwm);
-      digitalWrite(M1_DIR1, LOW);
-      digitalWrite(M1_DIR2, HIGH);
-
-      analogWrite(M2_PWM, pwm);
-      digitalWrite(M2_DIR1, HIGH);
-      digitalWrite(M2_DIR2, LOW);
-    }
-  
-}
-
-/*void driving()
-{
-        //시작 정차
-    while(start == 0) {
-        if (GetDistance(FC_TRIG, FC_ECHO) > center_detect) {
-            start ++;
-            break;
-        }
-    }
-    compute_steering = cur_steering;
-    compute_speed = cur_speed;
-
-    center = GetDistance(FC_TRIG, FC_ECHO);
-    left = GetDistance(L_TRIG, L_ECHO);
-    right = GetDistance(R_TRIG, R_ECHO);
-
-    if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) // 양쪽 차선이 검출된 경우=>정지선 또는 차선과 정지선을 모두 걸친 경우0
-    {
-        SetSpeed(0);//일단 정지
-        delay(1000);//1초 정지
-        SetSpeed(0.05);
-        delay(300);//느린 속도로 조금 움직여서 상황 판단
-        if(ir_sensing(IR_R)  || ir_sensing(IR_L) <= ???)//한쪽 센서에서 경기장 밖 바닥이 검출되면 정지선과 차선이 걸쳐있던 이상한 상황임을 인지
-        {
-          if(ir_sensing(IR_R)<= ???)//왼쪽에서 경기장 밖을 검출하면 왼쪽으로 꺾은 후 뒤로 후진, 다시 바퀴가 앞을 향하도록
-          {
-            servo.write(0);
-            SetSpeed(-0.1);
-            delay(400);
-            SetSpeed(0);
-            servo.write(90);
-          }
-          else if()//오른쪽에서 경기장 밖을 검출하면 오른쪽으로 꺾은 후 뒤로 후진, 다시 바퀴가 앞을 향하도록
-          {
-            servo.write(180);
-            SetSpeed(-0.1);
-            delay(400);
-            SetSpeed(0);
-            servo.write(90);
-          
-          }
-        }
-        
-        else//정지선이었구나
-        { 
-         SetSpeed(0.1)//앞으로 조금 더 나가서 무슨 상황인지 확인 
-         delay(500)
-         if(center==MAX_DISTANCE)//전방에 벽이 안 느껴질 때---->교차로 진입이나 평행주차 중 하나구나
-         { 
-          if(right<MAX_DISTANCE)//오른쪽에서 벽이 감지되면 평행주차, 감지되지 않으면 교차로 진입(직진)
-            ParallelParking();
-          else
-            straight();
-         }
-         else if(center<100)//전방에 벽이 느껴질 때
-         { 
-          if(right<MAX_DISTANCE)//T자인 경우=> 오른쪽 벽이 느껴진다
-            RearParking();
-          else  //회피주행인 경우=> 오른쪽 벽이 안 느껴진다
-            avoid_collision();
-         }   
-        }
-    }
-    straight();    
-}
-*/
 void straight() //양쪽 차선이 검출된 경우
 {    
     if (ir_sensing(IR_R) >= detect_ir && ir_sensing(IR_L) >= detect_ir) //차선이 검출되지 않을 경우 직진
@@ -300,90 +199,116 @@ void straight() //양쪽 차선이 검출된 경우
     }
 }
 
-void ParallelParking() {
-    //전진하다가 오른쪽 벽이 갑자기 가까워짐을 인식하면 멈추기
-    if(right<50)//전진을 덜해서 아직 주차공간에 다다르지 못한 경우
+void ParallelParking()
+{
+
+    while (true) // Move until right sensor detects wall
     {
-      SetSpeed(0.5);
-      delay(500);
+        if (GetDistance(R_TRIG, R_ECHO) <= 180)
+            break;
+        SetSteering(0);
+        SetSpeed(1);
     }
-    
-    while(1) {
-      SetSteering(0);
-      SetSpeed(0.5);
-      delay(25);
-      if (right < 150) {
-        SetSpeed(0);
-        break; //이제 주차 시작할 위치에 도착
-      }
-    }
-    //주차하려는데 차가 한쪽 벽으로 너무 쏠려있을 때
-/*    if(|Left-Right|>){
-      
-    }
-*/
 
-    //park - turn right 45deg
-    DifRotation(-1, 0.8); //핸들 꺾어서 후진으로 진입
-    delay(1000);
-
-    DifRotation(0, 0); //잠깐 정지
-    delay(300);
-    
-    DifRotation(1, 0); //핸들 가운데에 놓고 뒤로 조금 후진
-    delay(500);
-    
-    DifRotation(0, -0.8); //잠깐 정지해서 핸들 왼쪽으로 꺾기
-    delay(300);
-
-    SetSpeed(-1); //핸들 꺾인 상태로 마저 후진
-    delay(1000);
-    
+    SetSteering(0);
     SetSpeed(0);
-    delay(3000); //3초 정지, 주차 완료
+    delay(500);
 
+    // park - turn right 45deg
+    SetSteering(0.8);
+    SetSpeed(-1);
+    delay(1000);
+
+    SetSteering(0);
+    SetSpeed(-1);
+    delay(500);
+
+    SetSteering(-0.8);
+    SetSpeed(-1);
+    delay(700);
+
+    SetSteering(0);
+    SetSpeed(0);
+    delay(3500);
 
     SetSpeed(1); //핸들 여전히 왼쪽으로 꺾인 상태에서 그대로 다시 나오기
-    delay(1000);
-    DifRotation(0, 0); //잠깐 정지해서 핸들 가운데로
-    delay(300);
-
-    SetSpeed(1); // 핸들 가운데에 놓은 상태에서 앞으로 조금 전진
+    delay(700);
+    
+    SetSteering(0); //잠깐 정지해서 핸들 가운데로
+    SetSpeed(1);
     delay(500);
-    DifRotation(1,0.8); //핸들 오른쪽으로 꺾어서 평행주차 끝내기
-    delay(1000);
-    DifRotation(0,0); //핸들 가운데로 다시 정렬
 
- 
+    SetSteering(0.8);
+    SetSpeed(1);
+    delay(1000);
+
+    SetSpeed(0);
+    delay(3000);
+    
 }
 
-void T_Parking(){
+
+void T_Parking()
+{
     
-    //turn left 90deg
-    DifRotation(1, -0.8);
-    delay(1200);
-    DifRotation(0, 0);
-    delay(300);
+    while(1)
+    {
+      SetSteering(-1); //기본적으로 항상 좌회전
+      SetSpeed(0.3);
+      if(ir_sensing(IR_R) <= detect_ir)//오른쪽에서 차선 검출하면 오른쪽으로 핸들 꺾어서 후진
+      { 
+        SetSpeed(0); //우선 정지
+        delay(300);
+        SetSteering(0.8); //뒤로 후진
+        SetSpeed(-1);
+        delay(300);
+        SetSpeed(0); //다시 정지
+      }
+      else if(ir_sensing(IR_L) <= detect_ir)//왼쪽에서 차선 검출하면 오른쪽으로 살짝 핸들 꺾어서 전진(좌회전 중 왼쪽벽에 부딪치지 않게)
+      { 
+        SetSpeed(0); //우선 정지
+        delay(300);
+        SetSteering(0.3); //오른쪽으로 살짝 틀어서 전진
+        SetSpeed(0.5);
+        delay(300);
+      }
     
-    //back till detect
-    while(1) {
-      SetSpeed(-1);
-      if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) {
+      if(abs(GetDistance(R_TRIG, R_ECHO)-GetDistance(L_TRIG, L_ECHO))<90 && GetDistance(R_TRIG, R_ECHO)-GetDistance(L_TRIG, L_ECHO)>10) //제대로 좌회전한 상황=>왼쪽 벾까지의 거리와 오른쪽 벽까지의 거리의 차가 90mm 미만일 때
+      {  SetSteering(0); //우선 정지
         SetSpeed(0);
-        delay(PAUSE_TIME);
+        delay(1000);
+        //back till detect
+        while(1) {
+          SetSpeed(-0.5); //흰색 선이 검출될 때까지 후진 
+          if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) {
+             SetSpeed(0);
+             delay(3500);
+          }
+          break;
+        }
+        break;
       }
     }
+
     
-    //go forward, to escape detect
+    
+    // 빠져나오기
     SetSteering(0);
-    SetSpeed(1);
-    delay(200);
+    SetSpeed(0.5);
+    delay(3000);
 }
 
-void avoid_collision() // TODO Implement avoid collision function
+void avoid_collision() 
 {
-    //turn left 90deg
-    //just use driving.
+    SetSteering(-1); //좌측으로 회전
+    SetSpeed(0.7);
+    if(GetDistance(FC_TRIG, FC_ECHO)>500){ //전방이 측정불가능해질 때(전방 시야에서 장애물이 사라질 때)
+      SetSteering(-0.3);
+      SetSpeed(0.3);
+      delay(200);
+      straight();
+    }
+    
     
 }
 
@@ -392,11 +317,61 @@ void finish() // TODO Implement finish() functoin
     //break loop, to finish program.
     exit(0);
 }
+void driving()
+{
+        //시작 정차
+    center = GetDistance(FC_TRIG, FC_ECHO);
+    left = GetDistance(L_TRIG, L_ECHO);
+    right = GetDistance(R_TRIG, R_ECHO);
+    while(start == 0) {
+        if (GetDistance(FC_TRIG, FC_ECHO) > center_detect) {
+            start ++;
+            break;
+        }
+    }
+    compute_steering = cur_steering;
+    compute_speed = cur_speed;
+
+    
+    straight();
+    delay(300);
+
+    if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) // 양쪽 차선이 검출된 경우=>정지선 또는 차선과 정지선을 모두 걸친 경우0
+    {
+        SetSpeed(0);//일시정지(교차로에 정지선이 있기 때문에 무조건 멈춰야 함)
+        delay(1000);
+        
+        if(GetDistance(FC_TRIG, FC_ECHO)>400)//전방에 벽이 안 느껴질 때---->교차로 진입이나 평행주차 중 하나구나
+        { 
+         SetSpeed(1); //직진
+         delay(3000); 
+         SetSpeed(0); //정지(오른쪽에 벽있는지 감지하려고)
+         delay(500);
+         if(GetDistance(R_TRIG, R_ECHO)<400)//오른쪽에서 벽이 감지되면 평행주차, 감지되지 않으면 교차로 진입(그대로 직진)
+           ParallelParking();
+         else
+           straight();
+        }
+        else if(GetDistance(FC_TRIG, FC_ECHO)<400) //전방에 벽이 느껴질 때
+        {
+         SetSpeed(1);
+         delay(300); 
+         if(GetDistance(R_TRIG, R_ECHO)<500)//T자인 경우=> 오른쪽 벽이 느껴진다
+         {  SetSpeed(-1); //다시 제자리로 후진 후
+            delay(200);
+            T_Parking();
+         }
+         else  //회피주행인 경우=> 오른쪽 벽이 안 느껴진다
+          avoid_collision(); 
+        }   
+        
+    }    
+}
 
 void setup()
 {
 
-    Serial.begin(115200);
+    Serial.begin(9600);
     servo.attach(SERVO1_PIN); // 서보모터 초기화
 
     pinMode(IR_R, INPUT);
@@ -423,12 +398,13 @@ void setup()
 
     SetSteering(0);
     SetSpeed(0);
-    
+   
 
             
 }
 
-void loop()
-{
- ParallelParking();
+void loop(){
+  driving();
+/* Serial.println(abs(GetDistance(R_TRIG, R_ECHO)-GetDistance(L_TRIG, L_ECHO)));
+ delay(100);*/
 }
