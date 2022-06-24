@@ -201,49 +201,41 @@ void straight()
 
 void ParallelParking()
 {
-
-    while (true) // Move until right sensor detects wall
-    {
-        if (GetDistance(R_TRIG, R_ECHO) <= 180)
-            break;
-        SetSteering(0);
-        SetSpeed(1);
-    }
-
-    SetSteering(0);
-    SetSpeed(0);
-    delay(500);
-
-    // park - turn right 45deg
-    SetSteering(0.8);
+   while(1) 
+  {
+   SetSteering(0);
+   SetSpeed(0.5);
+   delay(10);
+   if (left < 50 && right > 50) {
+     SetSpeed(0);
+     delay(10);
+     break;
+   }
+  }
     SetSpeed(-1);
-    delay(500);
-
     SetSteering(0);
-    SetSpeed(-1);
-    delay(250);
-
-    SetSteering(-0.8);
-    SetSpeed(-1);
-    delay(350);
-
-    SetSteering(0);
-    SetSpeed(0);
-    delay(3500);
-
-    SetSpeed(1); //핸들 여전히 왼쪽으로 꺾인 상태에서 그대로 다시 나오기
-    delay(700);
-    
-    SetSteering(0); //잠깐 정지해서 핸들 가운데로
-    SetSpeed(1);
-    delay(500);
-
-    SetSteering(0.8);
-    SetSpeed(1);
+    delay(300);
+    SetSpeed(0.5);
+    SetSteering(1);
     delay(1000);
+    SetSteering(0);
+    delay(750);
+    SetSteering(-1);
+    delay(1000);
+    SetSpeed(0);
+    SetSteering(0);
+    delay(100);
+    SetSpeed(-0.5);
+    delay(800);
 
     SetSpeed(0);
-    delay(3000);
+    delay(2000);
+    SetSpeed(0.5);
+    SetSteering(-1);
+    delay(1200);
+    SetSteering(0);
+    delay(600);
+    
     
 }
 
@@ -303,15 +295,13 @@ void T_Parking()
 
 void avoid_collision() 
 {
-    SetSteering(-1); //좌측으로 회전
-    SetSpeed(0.7);
-    if(GetDistance(FC_TRIG, FC_ECHO)>500){ //전방이 측정불가능해질 때(전방 시야에서 장애물이 사라질 때)
-      SetSteering(-0.3);
-      SetSpeed(0.3);
-      delay(200);
-      straight();
-    }
-    
+   SetSpeed(0.5);
+   SetSteering(0);
+   delay(100);
+   SetSteering(-1);
+   delay(1100);
+   SetSteering(0);
+   delay(1000);   
     
 }
 
@@ -323,10 +313,7 @@ void finish() // TODO Implement finish() functoin
 void driving()
 {
         //시작 정차
-   center = GetDistance(FC_TRIG, FC_ECHO);
-    left = GetDistance(L_TRIG, L_ECHO);
-    right = GetDistance(R_TRIG, R_ECHO);
-    while(start == 0) {
+    while(1) {
         if (GetDistance(FC_TRIG, FC_ECHO) > center_detect) {
             start ++;
             break;
@@ -335,8 +322,10 @@ void driving()
     compute_steering = cur_steering;
     compute_speed = cur_speed;
 
+    center = GetDistance(FC_TRIG, FC_ECHO);
+    left = GetDistance(L_TRIG, L_ECHO);
+    right = GetDistance(R_TRIG, R_ECHO);
     
-    SetSpeed(0.1); //기본은 전진
     
     if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) // 양쪽 차선이 검출된 경우=>정지선 또는 차선과 정지선을 모두 걸친 경우0
     {
@@ -347,10 +336,6 @@ void driving()
         SetSpeed(0);
         if(GetDistance(FC_TRIG, FC_ECHO)>400)//전방에 벽이 안 느껴질 때---->교차로 진입이나 평행주차 중 하나구나
         { 
-         SetSpeed(1); //직진
-         delay(1500); 
-         SetSpeed(0); //정지(오른쪽에 벽있는지 감지하려고)
-         delay(500);
          if(GetDistance(L_TRIG, L_ECHO)<200)//왼쪽에서 벽이 감지되면 평행주차, 감지되지 않으면 교차로 진입(그대로 직진)
            ParallelParking();
          else
