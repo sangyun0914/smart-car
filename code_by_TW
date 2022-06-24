@@ -46,7 +46,7 @@ int stop_time = 300; // 전진후진 전환 시간 (단위 msec)
 int max_ai_pwm = 130; // 자율주행 모터 최대 출력 (0 ~ 255)
 int min_ai_pwm = 70;  // 자율주행 모터 최소 출력 (0 ~ 255)
 
-int angle_offset = 30; // 서보 모터 중앙각 오프셋 (단위: 도)
+int angle_offset = 25; // 서보 모터 중앙각 오프셋 (단위: 도)
 int angle_limit = 55;  // 서보 모터 회전 제한 각 (단위: 도)
 
 int center_detect = 200; // 전방 감지 거리 (단위: mm)
@@ -217,15 +217,15 @@ void ParallelParking()
     // park - turn right 45deg
     SetSteering(0.8);
     SetSpeed(-1);
-    delay(1000);
+    delay(500);
 
     SetSteering(0);
     SetSpeed(-1);
-    delay(500);
+    delay(250);
 
     SetSteering(-0.8);
     SetSpeed(-1);
-    delay(700);
+    delay(350);
 
     SetSteering(0);
     SetSpeed(0);
@@ -271,10 +271,12 @@ void T_Parking()
         SetSteering(0.3); //오른쪽으로 살짝 틀어서 전진
         SetSpeed(0.5);
         delay(300);
+        SetSpeed(0);
       }
     
       if(abs(GetDistance(R_TRIG, R_ECHO)-GetDistance(L_TRIG, L_ECHO))<90 && GetDistance(R_TRIG, R_ECHO)-GetDistance(L_TRIG, L_ECHO)>10) //제대로 좌회전한 상황=>왼쪽 벾까지의 거리와 오른쪽 벽까지의 거리의 차가 90mm 미만일 때
-      {  SetSteering(0); //우선 정지
+      {  
+        SetSteering(0); //우선 정지
         SetSpeed(0);
         delay(1000);
         //back till detect
@@ -340,8 +342,8 @@ void driving()
     {
         SetSpeed(0);//일시정지(교차로에 정지선이 있기 때문에 무조건 멈춰야 함)
         delay(1000);
-        SetSpeed(0.05); //초음파 감지 거리가 300 언저리라서 전방의 벽을 인식하려면 조금 앞으로 가는게 안전
-        delay(500);
+        SetSpeed(0.1); //초음파 감지 거리가 300 언저리라서 전방의 벽을 인식하려면 조금 앞으로 가는게 안전&정지마찰력때문에 속도는 너무 느리지 않게
+        delay(400);
         SetSpeed(0);
         if(GetDistance(FC_TRIG, FC_ECHO)>400)//전방에 벽이 안 느껴질 때---->교차로 진입이나 평행주차 중 하나구나
         { 
@@ -356,20 +358,34 @@ void driving()
         }
         else if(GetDistance(FC_TRIG, FC_ECHO)<300) //전방에 벽이 느껴질 때
        {
-         SetSteering(-1);
-         SetSpeed(0.2);
-         if(GetDistance(FC_TRIG, FC_ECHO)>400)
+         SetSteering(0);
+         SetSpeed(0.05);
+         if(GetDistance(FC_TRIG, FC_ECHO)<50) //전진해서 흰색선이 검출될 때까지
          {
           SetSpeed(0);
-          delay(1000);
-         }
-         if(GetDistance(L_TRIG, L_ECHO)<200)//T자인 경우=> 왼쪽 벽이 느껴진다=>T자 주차구나
-         { 
-             
-         }
-          else  //회피주행인 경우=> 오른쪽 벽이 안 느껴진다
-            avoid_collision(); 
+          if(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) //T자 주차구나
+          {
+            SetSpeed(-0.1);
+            if(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) //다시 정지선으로 돌아와서 T자 주차 시작
+            { 
+              SetSpeed(0);
+              delay(500);
+              T_Parking();
+            }
+              
+          }
+          else
+          {
+            SetSpeed(-0.1);
+            if(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) //다시 정지선으로 돌아와서 회피운전 시작
+            { 
+              SetSpeed(0);
+              delay(500);
+              avoid_collision();
+            }
+          }
            
+         }
        }
          
         
@@ -412,8 +428,7 @@ void setup()
 }
 
 void loop(){
-
-//  driving();
+ // driving();
   Serial.println(GetDistance(FC_TRIG, FC_ECHO));
   delay(100);
 /* Serial.println(abs(GetDistance(R_TRIG, R_ECHO)-GetDistance(L_TRIG, L_ECHO)));
