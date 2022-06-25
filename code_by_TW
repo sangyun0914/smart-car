@@ -269,35 +269,85 @@ void T_Parking()
         delay(300);
         SetSpeed(0);
       }
-    
-      if(abs(GetDistance(R_TRIG, R_ECHO)-GetDistance(L_TRIG, L_ECHO))<90 && abs(GetDistance(R_TRIG, R_ECHO)-GetDistance(L_TRIG, L_ECHO))>0) //제대로 좌회전한 상황=>왼쪽 벾까지의 거리와 오른쪽 벽까지의 거리의 차가 90mm 미만일 때
-      {  
-        SetSteering(0); //우선 정지
+      if(GetDistance(R_TRIG, R_ECHO)<150 && GetDistance(L_TRIG, L_ECHO)<150)
+        break;
+    }
+    SetSteering(0);
+    while(1)
+    {
+      
+      straight();
+      SetSpeed(compute_speed);
+      SetSteering(compute_steering);
+      if(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir)
+      {
         SetSpeed(0);
-        delay(1000);
-        //back till detect
-        while(1) 
-        {
-          SetSpeed(-0.5); //흰색 선이 검출될 때까지 후진 
-          if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) 
-          {
-             SetSpeed(0);
-             delay(3500);
-          }
-          break;
-        }
+        delay(3300);
         break;
       }
     }
 
+    while(1)
+    {
+      
+      SetSpeed(-0.3);
+      SetSteering(0);
+      
+      if(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir)
+      {
+        SetSpeed(0);
+        delay(3300);
+        break;
+      }
+    }
     
-    
-    // 빠져나오기
-    SetSteering(0);
-    SetSpeed(0.5);
-    delay(500);
-    straight();
 }
+        
+ /*  
+    while(1)
+    {
+      straight();
+      SetSpeed(compute_speed);
+      SetSteering(compute_steering);
+      if(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir)
+      {
+        SetSteering(0);
+        SetSpeed(-0.5);
+        delay(200);
+        if(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir)
+         {
+           SetSpeed(0);
+           delay(3300);
+           SetSpeed(0.5);
+           delay(500);
+           break;
+         }
+      } 
+    }
+    
+    while (!(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir))
+    {
+      straight();
+      SetSpeed(compute_speed);
+      SetSteering(compute_steering);    
+    }
+
+    SetSteering(0);
+    SetSpeed(-1);
+    delay(500);
+    while (!(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir))
+    {
+    SetSteering(0);
+    SetSpeed(-1); 
+    }
+    SetSpeed(0);
+    delay(3000);
+    */
+ 
+
+    
+
+
 
 void avoid_collision() 
 {
@@ -427,7 +477,16 @@ void driving()
    }
           
 }
+/*
+void checkLine() {
+  if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) {
+    SetSpeed(0);
+    SetSteering(0);
+      if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) {
 
+  }
+}
+*/
 
 void setup()
 {
@@ -466,9 +525,9 @@ void setup()
 
 void loop(){
   driving();
-/*  Serial.println(GetDistance(FC_TRIG, FC_ECHO));
+ /* Serial.println(GetDistance(R_TRIG, R_ECHO));
   delay(100);
-*/
+*/.
 /* Serial.println(abs(GetDistance(R_TRIG, R_ECHO)-GetDistance(L_TRIG, L_ECHO)));
  delay(100);*/
 }
