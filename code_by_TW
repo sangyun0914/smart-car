@@ -176,7 +176,17 @@ void SetSpeed(float speed)
     cur_speed = speed;
 }
 
-
+int checkLine() {
+  if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) {
+    SetSpeed(0);
+    SetSteering(0);
+    delay(100);
+      if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) {
+        return 1;
+      }
+  }
+  return 0;
+}
 
 void straight() 
 {    
@@ -274,10 +284,15 @@ void T_Parking()
         delay(300);
         SetSpeed(0);
       }
-      if(GetDistance(R_TRIG, R_ECHO)<150 && GetDistance(L_TRIG, L_ECHO)<150)
+      if(GetDistance(R_TRIG, R_ECHO)<135 && GetDistance(L_TRIG, L_ECHO)<135)
       {
-        SetSpeed(0.3);
-        delay(700);
+        Serial.println(GetDistance(R_TRIG, R_ECHO));
+        SetSpeed(0);
+        delay(500);
+        Serial.println(GetDistance(R_TRIG, R_ECHO));
+        SetSteering(-0.4);
+        SetSpeed(-0.2);
+        delay(200);
         SetSteering(0);
         break;
       }
@@ -287,7 +302,7 @@ void T_Parking()
     SetSteering(0);
     Serial.println("Begin straight until line");
 
-    while(1)
+ /*   while(1)
     {
       
       straight();
@@ -303,15 +318,29 @@ void T_Parking()
       }
     }
     Serial.println("Finish until line");
-
+*/
 
     while(1)
     {
       
       SetSpeed(-0.25);
       SetSteering(0);
-      
-      if(checkLine())
+      delay(300);
+/*      if(GetDistance(R_TRIG, R_ECHO)<60)
+      {
+        SetSpeed(-0.1);
+        SetSteering(-0.2);
+        delay(200);
+        continue;
+      }
+      else if(GetDistance(L_TRIG, L_ECHO)<60)
+      {
+        SetSpeed(-0.1);
+        SetSteering(0.2);
+        delay(200);
+        continue; 
+      }*/
+      if(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir)
       {
         SetSpeed(0);
         delay(3300);
@@ -413,7 +442,7 @@ void driving()
         SetSteering(0);
         SetSpeed(0);//일시정지(교차로에 정지선이 있기 때문에 무조건 멈춰야 함)
         delay(1000);
-        SetSpeed(0.1); //초음파 감지 거리가 300 언저리라서 전방의 벽을 인식하려면 조금 앞으로 가는게 안전&정지마찰력때문에 속도는 너무 느리지 않게
+        SetSpeed(0.3); //초음파 감지 거리가 300 언저리라서 전방의 벽을 인식하려면 조금 앞으로 가는게 안전&정지마찰력때문에 속도는 너무 느리지 않게
         delay(100);
         SetSpeed(0);
         if(GetDistance(FC_TRIG, FC_ECHO)>400)//전방에 벽이 안 느껴질 때---->교차로 진입이나 평행주차 중 하나구나
@@ -454,10 +483,10 @@ void driving()
               delay(20);
          }
           SetSpeed(0);
-          if(checkLine()) //T자 주차구나
+          if(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) //T자 주차구나
           {
-            SetSpeed(-0.1);
-            delay(400);
+            SetSpeed(-0.5);
+            delay(300);
             while(1)
             {
               SetSpeed(-0.1);
@@ -503,17 +532,7 @@ void driving()
           
 }
 
-int checkLine() {
-  if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) {
-    SetSpeed(0);
-    SetSteering(0);
-    delay(100);
-      if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) {
-        return 1;
-      }
-  }
-  return 0;
-}
+
 
 
 void setup()
@@ -553,9 +572,8 @@ void setup()
 
 void loop(){
   driving();
- /* Serial.println(GetDistance(R_TRIG, R_ECHO));
-  delay(100);
-*/
+
+
 /* Serial.println(abs(GetDistance(R_TRIG, R_ECHO)-GetDistance(L_TRIG, L_ECHO)));
  delay(100);*/
 }
