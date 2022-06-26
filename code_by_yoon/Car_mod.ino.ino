@@ -84,6 +84,37 @@ int ir_sensing(int pin)
 {
     return analogRead(pin);
 }
+int checkLine(int IR)
+{
+    if (IR == 0)
+    {
+        if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir)
+        {
+            SetSpeed(0);
+            SetSteering(0);
+            delay(100);
+            if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir)
+            {
+                return 1;
+            }
+        }
+        return 0;
+    }
+    else
+    {
+        if (ir_sensing(IR) <= detect_ir)
+        {
+            SetSpeed(0);
+            SetSteering(0);
+            delay(100);
+            if (ir_sensing(IR) <= detect_ir)
+            {
+                return 1;
+            }
+        }
+        return 0;
+    }
+}
 
 // 앞바퀴 조향
 void SetSteering(float steering)
@@ -304,38 +335,47 @@ void ParallelParking()
         SetSteering(0);
         SetSpeed(0.5);
     }
-        
-    
     while (true) // Move until right sensor detects wall
     {
-        if (ir_sensing(IR_R) >= detect_ir )
+        if (GetDistance(R_TRIG, R_ECHO) <= 180)
             break;
-        SetSteering(1);
-        SetSpeed(0.5);
-        delay(20);
-        turn_time ++;
+        SetSteering(0);
+        SetSpeed(-0.5);
     }
-    
-    for (int i = 0; i < turn_time; i++) {
-        SetSteering(-1);
-        SetSpeed(0.5);
+    delay(300);
+
+    while (true) // Move until right sensor detects wall
+    {
+        if (checkLine(IR_R))
+            break;
+        SetSteering(0.8);
+        SetSpeed(0.1);
         delay(20);
+        turn_time++;
     }
-    
     SetSteering(0);
     SetSpeed(-0.5);
-    delay(1500);
-    
+    delay(1000);
+    for (int i = 0; i < turn_time; i++)
+    {
+        SetSteering(-0.8);
+        SetSpeed(0.1);
+        delay(20);
+    }
+
+    SetSteering(0);
+    SetSpeed(-0.5);
+    delay(1000);
+
     SetSpeed(0);
     delay(2000);
-    
-    
-    while (true) {
-        if (ir_sensing(IR_L) >= detect_ir )
+
+    while (true)
+    {
+        if (ir_sensing(IR_L) >= detect_ir)
             break;
         SetSpeed(0.5);
         SetSteering(-1);
-        
     }
 }
 
