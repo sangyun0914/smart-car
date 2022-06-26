@@ -282,6 +282,23 @@ void T_Parking()
         SetSpeed(-0.3);
         SetSpeed(-0.05);
     }
+    while(GetDistance(L_TRIG, L_ECHO) < 200) {
+      if (GetDistance(L_TRIG, L_ECHO) > GetDistance(R_TRIG, R_ECHO)) 
+        SetSteering(-1);
+      else if (GetDistance(L_TRIG, L_ECHO) < GetDistance(R_TRIG, R_ECHO))
+        SetSteering(1);
+      else
+        SetSteering(0);
+      SetSpeed(-0.2);
+    }
+    while (ir_sensing(IR_R) > detect_ir && ir_sensing(IR_L) > detect_ir){
+       break;
+    }
+    SetSpeed(0);
+    SetSteering(0);
+    delay(2000);
+    SetSpeed(0.5);
+    delay(200);
 
 }
 
