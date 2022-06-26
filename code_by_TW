@@ -470,6 +470,8 @@ void driving()
               break;  
             }
            }
+           SetSpeed(-0.5);
+           delay(300);
              
           }
           
