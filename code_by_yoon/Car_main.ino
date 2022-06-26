@@ -291,7 +291,7 @@ void T_Parking()
         SetSteering(0);
       SetSpeed(-0.2);
     }
-    while (ir_sensing(IR_R) > detect_ir && ir_sensing(IR_L) > detect_ir){
+    while (ir_sensing(IR_R) > detect_ir or ir_sensing(IR_L) > detect_ir){
        delay(10);
     }
     SetSpeed(0);
