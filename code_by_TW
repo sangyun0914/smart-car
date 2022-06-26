@@ -437,13 +437,13 @@ void driving()
     SetSpeed(compute_speed);
     SetSteering(compute_steering);
     
-    if (checkLine()) // 양쪽 차선이 검출된 경우=>정지선 또는 차선과 정지선을 모두 걸친 경우0
+    if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) // 양쪽 차선이 검출된 경우=>정지선 또는 차선과 정지선을 모두 걸친 경우0
     {
         SetSteering(0);
         SetSpeed(0);//일시정지(교차로에 정지선이 있기 때문에 무조건 멈춰야 함)
         delay(1000);
         SetSpeed(0.3); //초음파 감지 거리가 300 언저리라서 전방의 벽을 인식하려면 조금 앞으로 가는게 안전&정지마찰력때문에 속도는 너무 느리지 않게
-        delay(100);
+        delay(300);
         SetSpeed(0);
         if(GetDistance(FC_TRIG, FC_ECHO)>400)//전방에 벽이 안 느껴질 때---->교차로 진입이나 평행주차 중 하나구나
         { 
@@ -453,10 +453,15 @@ void driving()
           delay(500);
           if(GetDistance(L_TRIG, L_ECHO)<200)//왼쪽에서 벽이 감지되면 평행주차, 감지되지 않으면 교차로 진입(그대로 직진)
           {
-           SetSpeed(-0.1);
-           while(1)
+            while(1)
+            {
+              SetSpeed(0.5);
+              if(GetDistance(R_TRIG, R_ECHO)>200)
+                break;
+            }
+            while(1)
            {
-            delay(20);
+            SetSpeed(-0.5);
             if(GetDistance(R_TRIG, R_ECHO)<200)
             {
               SetSpeed(0);
@@ -473,7 +478,7 @@ void driving()
         
          
         }
-        else if(GetDistance(FC_TRIG, FC_ECHO)<300) //전방에 벽이 느껴질 때
+        else if(GetDistance(FC_TRIG, FC_ECHO)<350) //전방에 벽이 느껴질 때
         {
 
          while (!(GetDistance(FC_TRIG, FC_ECHO)<35)) //전진해서 흰색선이 검출될 때까지
