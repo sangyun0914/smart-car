@@ -281,6 +281,7 @@ void T_Parking()
     while(GetDistance(L_TRIG, L_ECHO) > 200 && GetDistance(R_TRIG, R_ECHO) > 200){
         SetSpeed(-0.3);
         SetSpeed(-0.05);
+    }
 
 }
 
