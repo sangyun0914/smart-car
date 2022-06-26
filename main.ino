@@ -35,6 +35,7 @@ float right;
 
 int state = 0;
 int count_lines = 0;
+int turn_time = 0;
 
 // 자동차 튜닝 파라미터 =====================================================================
 int detect_ir = 26; // 검출선이 흰색과 검정색 비교
@@ -46,7 +47,7 @@ int stop_time = 300; // 전진후진 전환 시간 (단위 msec)
 int max_ai_pwm = 130; // 자율주행 모터 최대 출력 (0 ~ 255)
 int min_ai_pwm = 70;  // 자율주행 모터 최소 출력 (0 ~ 255)
 
-int angle_offset = -6; // 서보 모터 중앙각 오프셋 (단위: 도)
+int angle_offset = -8; // 서보 모터 중앙각 오프셋 (단위: 도)
 int angle_limit = 55;  // 서보 모터 회전 제한 각 (단위: 도)
 
 int center_detect = 200; // 전방 감지 거리 (단위: mm)
@@ -176,19 +177,36 @@ void SetSpeed(float speed)
     cur_speed = speed;
 }
 
-int checkLine()
+int checkLine(int IR)
 {
-    if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir)
+    if (IR == 0)
     {
-        SetSpeed(0);
-        SetSteering(0);
-        delay(100);
         if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir)
         {
-            return 1;
+            SetSpeed(0);
+            SetSteering(0);
+            delay(100);
+            if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir)
+            {
+                return 1;
+            }
         }
+        return 0;
     }
-    return 0;
+    else
+    {
+        if (ir_sensing(IR) <= detect_ir)
+        {
+            SetSpeed(0);
+            SetSteering(0);
+            delay(100);
+            if (ir_sensing(IR) <= detect_ir)
+            {
+                return 1;
+            }
+        }
+        return 0;
+    }
 }
 
 void straight()
@@ -214,44 +232,57 @@ void straight()
 
 void ParallelParking()
 {
-    SetSpeed(0.8);
-    SetSteering(1);
-    delay(1000);
-    while (1)
+
+    while (true) // Move until right sensor detects wall
     {
-        SetSpeed(0.3);
-        SetSteering(-0.4);
-        delay(30);
-        if (GetDistance(R_TRIG, R_ECHO) < 100 || ir_sensing(IR_R) <= detect_ir)
+        if (GetDistance(R_TRIG, R_ECHO) > 180)
+            break;
+        SetSteering(0);
+        SetSpeed(0.5);
+    }
+    while (true) // Move until right sensor detects wall
+    {
+        if (GetDistance(R_TRIG, R_ECHO) <= 180)
+            break;
+        SetSteering(0);
+        SetSpeed(-0.5);
+    }
+    delay(300);
+
+    while (true) // Move until right sensor detects wall
+    {
+        if (checkLine(IR_R))
+            break;
+        SetSteering(0.8);
+        SetSpeed(0.1);
+        delay(20);
+        turn_time++;
+    }
+    SetSteering(0);
+    SetSpeed(-0.5);
+    delay(750);
+    for (int i = 0; i < turn_time; i++)
+    {
+        SetSteering(-0.8);
+        SetSpeed(0.1);
+        delay(20);
+        if (checkLine(IR_L))
         {
-            SetSpeed(-0.3);
-            SetSteering(1);
-            delay(200);
-        }
-        if (GetDistance(FC_TRIG, FC_ECHO) < 100)
-        {
+            Serial.print("Detected 80 FC ");
+            break;
         }
     }
-    /*
-        delay(1000);
-        SetSteering(0);
-        delay(750);
-        SetSteering(-1);
-        delay(1000);
-        SetSpeed(0);
-        SetSteering(0);
-        delay(100);
-        SetSpeed(-0.5);
-        delay(800);
 
-        SetSpeed(0);
-        delay(2000);
-        SetSpeed(0.5);
-        SetSteering(-1);
-        delay(1200);
-        SetSteering(0);
-        delay(600);
-        */
+    SetSteering(0);
+    SetSpeed(-0.5);
+    delay(900);
+
+    SetSpeed(0);
+    delay(2000);
+
+    SetSpeed(0.5);
+    SetSteering(-0.7);
+    delay(200);
 }
 
 void T_Parking()
@@ -297,7 +328,7 @@ void T_Parking()
         straight();
         SetSpeed(compute_speed);
         SetSteering(compute_steering);
-        if (checkLine())
+        if (checkLine(0))
         {
             SetSpeed(0);
             delay(300);
@@ -312,7 +343,7 @@ void T_Parking()
         SetSteering(0);
         delay(30);
 
-        if (checkLine())
+        if (checkLine(0))
         {
             SetSpeed(0);
             delay(3000);
@@ -351,7 +382,7 @@ void driving()
     SetSpeed(compute_speed);
     SetSteering(compute_steering);
 
-    if (checkLine()) // 양쪽 차선이 검출된 경우=>정지선 또는 차선과 정지선을 모두 걸친 경우
+    if (checkLine(0)) // 양쪽 차선이 검출된 경우=>정지선 또는 차선과 정지선을 모두 걸친 경우
     {
         SetSteering(0);
         SetSpeed(0); //일시정지(교차로에 정지선이 있기 때문에 무조건 멈춰야 함)
@@ -361,30 +392,19 @@ void driving()
         SetSpeed(0);
         if (GetDistance(FC_TRIG, FC_ECHO) > 400) //전방에 벽이 안 느껴질 때---->교차로 진입이나 평행주차 중 하나구나
         {
-            SetSpeed(1); //직진
-            delay(1500);
-            SetSpeed(0); //정지(오른쪽에 벽있는지 감지하려고)
-            delay(500);
+            SetSpeed(0.5); //직진
+            delay(400);
+            SetSpeed(0);
 
             if (GetDistance(L_TRIG, L_ECHO) < 200) //왼쪽에서 벽이 감지되면 평행주차, 감지되지 않으면 교차로 진입(그대로 직진)
             {
-                SetSpeed(-0.1);
-                while (1)
-                {
-                    delay(20);
-                    if (GetDistance(R_TRIG, R_ECHO) < 200)
-                    {
-                        SetSpeed(0);
-                        delay(300);
-                        Serial.print("Parallel parking");
-                        ParallelParking();
-                        break;
-                    }
-                }
+                SetSpeed(0);
+                ParallelParking();
             }
 
             else
             {
+                delay(3000);
                 Serial.print("Straight");
 
                 straight();
@@ -394,7 +414,7 @@ void driving()
         {
             T_Parking();
 
-            if (checkLine()) //다시 정지선으로 돌아와서 T자 주차 시작
+            if (checkLine(0)) //다시 정지선으로 돌아와서 T자 주차 시작
             {
                 SetSpeed(0);
                 delay(500);
