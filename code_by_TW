@@ -275,125 +275,33 @@ void T_Parking()
         delay(400);
         SetSpeed(0); //다시 정지
       }
-      else if(ir_sensing(IR_L) <= detect_ir)//왼쪽에서 차선 검출하면 오른쪽으로 살짝 핸들 꺾어서 전진(좌회전 중 왼쪽벽에 부딪치지 않게)
-      { 
-        SetSpeed(0); //우선 정지
-        delay(300);
-        SetSteering(0.3); //오른쪽으로 살짝 틀어서 전진
-        SetSpeed(0.5);
-        delay(300);
-        SetSpeed(0);
-      }
+      
       if(GetDistance(R_TRIG, R_ECHO)<135 && GetDistance(L_TRIG, L_ECHO)<135)
       {
         Serial.println(GetDistance(R_TRIG, R_ECHO));
         SetSpeed(0);
         delay(500);
         Serial.println(GetDistance(R_TRIG, R_ECHO));
-        SetSteering(-0.4);
-        SetSpeed(-0.2);
-        delay(200);
-        SetSteering(0);
+        SetSteering(-0.5);
+        SetSpeed(0.5);
+        delay(300);
         break;
       }
         
     }
-    Serial.println("Finish detect side");
-    SetSteering(0);
-    Serial.println("Begin straight until line");
-
- /*   while(1)
-    {
-      
-      straight();
-      SetSpeed(compute_speed);
-      SetSteering(compute_steering);
-      if(checkLine())
-      {
-        SetSpeed(0);
-        delay(300);
-        SetSpeed(-0.3);
-        delay(500);
-        break;
-      }
-    }
-    Serial.println("Finish until line");
-*/
-
     while(1)
     {
-      
       SetSpeed(-0.25);
-      SetSteering(0);
+      SetSteering(-0.2);
       delay(300);
-/*      if(GetDistance(R_TRIG, R_ECHO)<60)
-      {
-        SetSpeed(-0.1);
-        SetSteering(-0.2);
-        delay(200);
-        continue;
-      }
-      else if(GetDistance(L_TRIG, L_ECHO)<60)
-      {
-        SetSpeed(-0.1);
-        SetSteering(0.2);
-        delay(200);
-        continue; 
-      }*/
       if(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir)
       {
         SetSpeed(0);
         delay(3300);
         break;
       }
-    }
-    Serial.println("Finish parking");
-
-    
+   } 
 }
-        
- /*  
-    while(1)
-    {
-      straight();
-      SetSpeed(compute_speed);
-      SetSteering(compute_steering);
-      if(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir)
-      {
-        SetSteering(0);
-        SetSpeed(-0.5);
-        delay(200);
-        if(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir)
-         {
-           SetSpeed(0);
-           delay(3300);
-           SetSpeed(0.5);
-           delay(500);
-           break;
-         }
-      } 
-    }
-    
-    while (!(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir))
-    {
-      straight();
-      SetSpeed(compute_speed);
-      SetSteering(compute_steering);    
-    }
-
-    SetSteering(0);
-    SetSpeed(-1);
-    delay(500);
-    while (!(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir))
-    {
-    SetSteering(0);
-    SetSpeed(-1); 
-    }
-    SetSpeed(0);
-    delay(3000);
-    */
- 
-
     
 
 
