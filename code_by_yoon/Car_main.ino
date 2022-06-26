@@ -260,15 +260,15 @@ void T_Parking()
     SetSteering(0);
     SetSpeed(0);
     delay(100);
-    SetSpeed(1);
+    SetSpeed(0.3);
     delay(400);
     while(1) {
-      SetSpeed(0.5);
+      SetSpeed(0.3);
       SetSteering(-1);
       if (ir_sensing(IR_R) <= detect_ir){
         SetSteering(1);
-        SetSpeed(-0.5);
-        delay(150);
+        SetSpeed(-0.3);
+        delay(200);
         continue;
         }
       else if (ir_sensing(IR_L) <= detect_ir){
