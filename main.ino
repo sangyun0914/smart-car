@@ -1,4 +1,13 @@
 #include <Servo.h>
+
+#define NOTE_E6 1319
+#define NOTE_C6 1047
+#define NOTE_C5 523
+#define NOTE_G4 392
+#define NOTE_G5 784
+#define NOTE_E5 659
+#define REST 0
+
 Servo servo;
 
 /**
@@ -26,8 +35,8 @@ const int R_TRIG = 2;   // 우측 초음파 센서 TRIG 핀
 const int R_ECHO = A5;  // 우측 초음파 센서 ECHO 핀
 
 const int MAX_DISTANCE = 2000; // 초음파 센서의 최대 감지거리 실제로는 300언저리...
-
 const int PAUSE_TIME = 2000;
+const int buzzer = 3;
 
 float center;
 float left;
@@ -36,6 +45,20 @@ float right;
 int state = 0;
 int count_lines = 0;
 int turn_time = 0;
+int tempo = 200;
+
+int melody[] = {
+    NOTE_E6, 4, NOTE_C6, 2,
+    NOTE_C5, 8, NOTE_C5, 8, NOTE_C5, 8,
+    NOTE_G4, 8, NOTE_G5, 4, NOTE_G5, 8, NOTE_E5, 4,
+    REST, 4};
+
+int notes = sizeof(melody) / sizeof(melody[0]) / 2;
+
+// this calculates the duration of a whole note in ms
+int wholenote = (60000 * 4) / tempo;
+
+int divider = 0, noteDuration = 0;
 
 // 자동차 튜닝 파라미터 =====================================================================
 int detect_ir = 26; // 검출선이 흰색과 검정색 비교
@@ -65,6 +88,38 @@ float max_pwm;
 float min_pwm;
 
 int start = 0;
+
+void playSong()
+{
+    // iterate over the notes of the melody.
+    // Remember, the array is twice the number of notes (notes + durations)
+    for (int thisNote = 0; thisNote < notes * 2; thisNote = thisNote + 2)
+    {
+
+        // calculates the duration of each note
+        divider = melody[thisNote + 1];
+        if (divider > 0)
+        {
+            // regular note, just proceed
+            noteDuration = (wholenote) / divider;
+        }
+        else if (divider < 0)
+        {
+            // dotted notes are represented with negative durations!!
+            noteDuration = (wholenote) / abs(divider);
+            noteDuration *= 1.5; // increases the duration in half for dotted notes
+        }
+
+        // we only play the note for 90% of the duration, leaving 10% as a pause
+        tone(buzzer, melody[thisNote], noteDuration * 0.9);
+
+        // Wait for the specief duration before playing the next note.
+        delay(noteDuration);
+
+        // stop the waveform generation before the next note.
+        noTone(buzzer);
+    }
+}
 
 // 초음파 거리측정
 float GetDistance(int trig, int echo)
@@ -378,6 +433,7 @@ void finish() // TODO Implement finish() functoin
 {
     // break loop, to finish program.
     SetSpeed(0);
+    playSong();
     exit(0);
 }
 void driving()
@@ -470,6 +526,7 @@ void loop()
     {
         if (GetDistance(FC_TRIG, FC_ECHO) > center_detect)
         {
+            playSong();
             state++;
         }
     }
