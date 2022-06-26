@@ -25,7 +25,7 @@ const int L_ECHO = A1;  // 좌측 초음파 센서 ECHO 핀
 const int R_TRIG = 2;   // 우측 초음파 센서 TRIG 핀
 const int R_ECHO = A5;  // 우측 초음파 센서 ECHO 핀
 
-const int MAX_DISTANCE = 2000; // 초음파 센서의 최대 감지거리
+const int MAX_DISTANCE = 2000; // 초음파 센서의 최대 감지거리 실제로는 300언저리...
 
 const int PAUSE_TIME = 2000;
 
@@ -35,9 +35,10 @@ float right;
 
 int state = 0;
 int count_lines = 0;
+int turn_time = 0;
 
 // 자동차 튜닝 파라미터 =====================================================================
-int detect_ir = 25; // 검출선이 흰색과 검정색 비교
+int detect_ir = 26; // 검출선이 흰색과 검정색 비교
 
 int punch_pwm = 200; // 정지 마찰력 극복 출력 (0 ~ 255)
 int punch_time = 50; // 정지 마찰력 극복 시간 (단위 msec)
@@ -176,51 +177,44 @@ void SetSpeed(float speed)
     cur_speed = speed;
 }
 
-void DifRotation(float speed, float steering) {
-  // speed 에 양수가 오면 전진 else 후진
-  // steering 에 양수 오면 우회전 아니면 좌회전 (전진 기준)
-
-    // 전축 회전
-    cur_steering = constrain(steering, -1, 1); // constrain -1~ 1 값으로 제한
-
-    float angle = cur_steering * angle_limit;
-    int servoAngle = angle + 90;
-    servoAngle += angle_offset;
-
-    servoAngle = constrain(servoAngle, 0, 180);
-    servo.write(servoAngle);
-
-    int pwm = abs(speed) * 225;  // 0 ~ 255
-
-    if (speed > 0) {
-      analogWrite(M1_PWM, pwm);
-      digitalWrite(M1_DIR1, HIGH);
-      digitalWrite(M1_DIR2, LOW);
-
-      analogWrite(M2_PWM, pwm);
-      digitalWrite(M2_DIR1, LOW);
-      digitalWrite(M2_DIR2, HIGH);
+int checkLine(int IR)
+{
+    if (IR == 0)
+    {
+        if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir)
+        {
+            SetSpeed(0);
+            SetSteering(0);
+            delay(100);
+            if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir)
+            {
+                return 1;
+            }
+        }
+        return 0;
     }
-    else if (speed < 0) {
-      analogWrite(M1_PWM, pwm);
-      digitalWrite(M1_DIR1, LOW);
-      digitalWrite(M1_DIR2, HIGH);
-
-      analogWrite(M2_PWM, pwm);
-      digitalWrite(M2_DIR1, HIGH);
-      digitalWrite(M2_DIR2, LOW);
+    else
+    {
+        if (ir_sensing(IR) <= detect_ir)
+        {
+            SetSpeed(0);
+            SetSteering(0);
+            delay(100);
+            if (ir_sensing(IR) <= detect_ir)
+            {
+                return 1;
+            }
+        }
+        return 0;
     }
-  
 }
 
-
-
-void straight() //양쪽 차선이 검출된 경우
-{    
+void straight()
+{
     if (ir_sensing(IR_R) >= detect_ir && ir_sensing(IR_L) >= detect_ir) //차선이 검출되지 않을 경우 직진
     {
         compute_steering = 0;
-        compute_speed = 1;
+        compute_speed = 0.5;
     }
 
     else if (ir_sensing(IR_R) <= detect_ir) // 오른쪽 차선이 검출된 경우
@@ -236,53 +230,72 @@ void straight() //양쪽 차선이 검출된 경우
     }
 }
 
-void ParallelParking() {
-     //이 아래 나중 삭제 테스트용 추가 라인
-    //go forward till right wall disappear
-    SetSteering(0);
-    SetSpeed(0.5);
-    delay(500);
-    while(1) {
-      delay(20);
-      if (GetDistance(R_TRIG, R_ECHO) <= 180){
-        break;
-      }
+void ParallelParking()
+{
+
+    while (true) // Move until right sensor detects wall
+    {
+        if (GetDistance(R_TRIG, R_ECHO) > 180)
+            break;
+        SetSteering(0);
+        SetSpeed(0.5);
     }
-    while(1) {
-      SetSteering(0);
-      SetSpeed(0.5);
-      delay(10);
-      if (GetDistance(R_TRIG, R_ECHO) > 180) {
-        break;
-      }
+    while (true) // Move until right sensor detects wall
+    {
+        if (GetDistance(R_TRIG, R_ECHO) <= 180)
+            break;
+        SetSteering(0);
+        SetSpeed(-0.5);
     }
-    SetSpeed(-1);
+    delay(200);
+
+    while (true) // Move until right sensor detects wall
+    {
+        if (checkLine(IR_R))
+            break;
+        SetSteering(0.8);
+        SetSpeed(0.1);
+        delay(20);
+        turn_time++;
+    }
     SetSteering(0);
-    delay(400);
-    SetSpeed(0.5);
-    SetSteering(1);
-    delay(1000);
-    SetSteering(0);
-    delay(750);
-    SetSteering(-1);
-    delay(1000);
-    SetSpeed(0);
-    SetSteering(0);
-    delay(100);
     SetSpeed(-0.5);
-    delay(800);
+    delay(750);
+    for (int i = 0; i < turn_time; i++)
+    {
+        SetSteering(-0.8);
+        SetSpeed(0.1);
+        delay(20);
+        if (checkLine(IR_L))
+        {
+            Serial.print("Detected 80 FC ");
+            break;
+        }
+    }
+
+    SetSteering(0.2);
+    SetSpeed(-0.5);
+    delay(900);
 
     SetSpeed(0);
     delay(2000);
-    SetSpeed(0.5);
+
+    while (!(checkLine(IR_L)))
+    {
+        SetSpeed(0.5);
+        SetSteering(-1);
+    }
     SetSteering(-1);
-    delay(1200);
-    SetSteering(0);
-    delay(600);
-    
+    SetSpeed(-0.3);
+    delay(800);
+    /*SetSpeed(0.5);
+    SetSteering(1);
+    delay(400);
+    */
 }
 
-void RearParking(){
+void T_Parking()
+{
     
     SetSteering(0);
     SetSpeed(0);
@@ -319,42 +332,32 @@ void RearParking(){
     delay(2000);
     SetSpeed(0.5);
     delay(500);
+
 }
 
-void avoid_collision() // TODO Implement avoid collision function
+void avoid_collision()
 {
-    //turn left 90deg
-    //just use driving.
     SetSpeed(0.5);
     SetSteering(0);
     delay(100);
     SetSteering(-1);
-    delay(1100);
-    SetSteering(0);
-    delay(1000);
-    
-    
-    
+    delay(200);
+    for(int i;; i++){
+        SetSteering(-1+ 0.1*i);
+      if(ir_sensing(IR_L) <= detct_ir) 
+        break;
+    }
+
 }
 
 void finish() // TODO Implement finish() functoin
 {
-    //break loop, to finish program.
-    SetSpeed(0);
-    SetSteering(0);
+    // break loop, to finish program.
     exit(0);
 }
-
 void driving()
 {
-        //시작 정차
-    while(start == 0) {
-        if (GetDistance(FC_TRIG, FC_ECHO) > center_detect) {
-            SetSpeed(0);
-            start ++;
-            break;
-        }
-    }
+
     compute_steering = cur_steering;
     compute_speed = cur_speed;
 
@@ -362,50 +365,42 @@ void driving()
     left = GetDistance(L_TRIG, L_ECHO);
     right = GetDistance(R_TRIG, R_ECHO);
 
-    if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir) // 양쪽 차선이 검출된 경우
-    {
-        count_lines++; // Increment count_lines
-        
-        if (count_lines == 1) // First line
-        {
-            ParallelParking();
-        }
-
-        else if (count_lines == 2 || count_lines == 3) // Second, Third line
-        {
-            SetSpeed(0);
-            delay(PAUSE_TIME);
-            SetSpeed(0.5);
-            SetSteering(0);
-            delay(100);
-        }
-
-        else if (count_lines == 4) // Fourth line
-        {
-            RearParking();
-        }
-
-        else if (count_lines == 5) // Fifth line
-        {
-            avoid_collision();
-        }
-
-        else if (count_lines == 6)
-        {
-            finish();
-        }
-    }
-
     straight();
-
     SetSpeed(compute_speed);
     SetSteering(compute_steering);
+
+    if (checkLine(0)) // 양쪽 차선이 검출된 경우=>정지선 또는 차선과 정지선을 모두 걸친 경우
+    {
+        Serial.println("Detected Line!");
+        SetSteering(0);
+        SetSpeed(0); //일시정지(교차로에 정지선이 있기 때문에 무조건 멈춰야 함)
+        delay(3000);
+        SetSpeed(0.3); //초음파 감지 거리가 300 언저리라서 전방의 벽을 인식하려면 조금 앞으로 가는게 안전&정지마찰력때문에 속도는 너무 느리지 않게
+        delay(100);
+        SetSpeed(0);
+        if (GetDistance(FC_TRIG, FC_ECHO) > 400) //전방에 벽이 안 느껴질 때---->교차로 진입이나 평행주차 중 하나구나
+        {
+            SetSpeed(0.5); //직진
+            delay(400);
+            SetSpeed(0);
+
+            if (GetDistance(L_TRIG, L_ECHO) < 200) //왼쪽에서 벽이 감지되면 평행주차, 감지되지 않으면 교차로 진입(그대로 직진)
+            {
+                SetSpeed(0);
+                Serial.println("Parallel Park!");
+
+                ParallelParking();
+            }
+        }
+        else if (GetDistance(FC_TRIG, FC_ECHO) < 300) //전방에 벽이 느껴질 때 T자 주차구나
+            T_Parking();
+    }
 }
 
 void setup()
 {
 
-    Serial.begin(115200);
+    Serial.begin(9600);
     servo.attach(SERVO1_PIN); // 서보모터 초기화
 
     pinMode(IR_R, INPUT);
@@ -432,20 +427,15 @@ void setup()
 
     SetSteering(0);
     SetSpeed(0);
-    
 
-            
+    while (1)
+    {
+        if (GetDistance(FC_TRIG, FC_ECHO) > center_detect)
+            break;
+    }
 }
 
-int i;
-void loop(){
-  driving();
-
-
-
-
-
-
-
-   
+void loop()
+{
+    driving();
 }
