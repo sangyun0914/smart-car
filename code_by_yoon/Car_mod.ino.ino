@@ -294,18 +294,20 @@ void RearParking(){
     while(1) {
       SetSpeed(0.5);
       SetSteering(-1);
-      delay(20);
       if (ir_sensing(IR_R) <= detect_ir){
         SetSteering(1);
         SetSpeed(-0.5);
-        delay(100);
+        delay(150);
         continue;
         }
       else if (ir_sensing(IR_L) <= detect_ir){
         break;
       }
     }
-    while(GetDistance(L_TRIG, L_ECHO) > 200 && GetDistance(R_TRIG, R_ECHO)){
+    SetSteering(0);
+    SetSpeed(-0.3);
+    delay(100);
+    while(GetDistance(L_TRIG, L_ECHO) > 200 && GetDistance(R_TRIG, R_ECHO) > 200){
         SetSpeed(-0.3);
         SetSpeed(-0.05);
     }
