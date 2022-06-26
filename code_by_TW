@@ -291,8 +291,8 @@ void T_Parking()
         delay(500);
         Serial.println(GetDistance(R_TRIG, R_ECHO));
         SetSteering(-0.4);
-        SetSpeed(-0.2);
-        delay(200);
+        SetSpeed(0.3);
+        delay(300);
         SetSteering(0);
         break;
       }
