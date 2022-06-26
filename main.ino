@@ -466,5 +466,13 @@ void setup()
 
 void loop()
 {
-    driving();
+    if (GetDistance(FC_TRIG, FC_ECHO) <= center_detect && state == 0)
+    {
+        if (GetDistance(FC_TRIG, FC_ECHO) > center_detect)
+        {
+            state++;
+        }
+    }
+    if (state != 0)
+        driving();
 }
