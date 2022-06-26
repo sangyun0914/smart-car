@@ -177,9 +177,9 @@ void SetSpeed(float speed)
     cur_speed = speed;
 }
 
-int checkLine(int IR)
+int checkLine(int IR) // Check for valid line
 {
-    if (IR == 0)
+    if (IR == 0) // Check for line
     {
         if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir)
         {
@@ -193,7 +193,7 @@ int checkLine(int IR)
         }
         return 0;
     }
-    else
+    else // Check for valid sensor
     {
         if (ir_sensing(IR) <= detect_ir)
         {
@@ -214,7 +214,7 @@ void straight()
     if (ir_sensing(IR_R) >= detect_ir && ir_sensing(IR_L) >= detect_ir) //차선이 검출되지 않을 경우 직진
     {
         compute_steering = 0;
-        compute_speed = 0.5;
+        compute_speed = 0.1;
     }
 
     else if (ir_sensing(IR_R) <= detect_ir) // 오른쪽 차선이 검출된 경우
@@ -288,94 +288,65 @@ void ParallelParking()
     SetSteering(-1);
     SetSpeed(-0.3);
     delay(800);
-    /*SetSpeed(0.5);
-    SetSteering(1);
-    delay(400);
-    */
 }
 
 void T_Parking()
 {
-    SetSpeed(0.5);
-    delay(500);
-    while (1)
-    {
-        SetSteering(-1); //기본적으로 항상 좌회전
-        SetSpeed(0.3);
-        delay(100);
-        SetSpeed(0);
-        delay(10);
-        if (ir_sensing(IR_R) <= detect_ir) //오른쪽에서 차선 검출하면 오른쪽으로 핸들 꺾어서 후진
-        {
-            SetSpeed(0); //우선 정지
-            delay(150);
-            SetSteering(1); //뒤로 후진
-            SetSpeed(-0.3);
-            delay(400);
-            SetSpeed(0); //다시 정지
-        }
-
-        if (checkLine(IR_L))
-        {
-            break;
-        }
-    }
-    SetSteering(0.1);
-    SetSpeed(0.1);
+    SetSteering(0);
+    SetSpeed(0);
     delay(100);
-    Serial.println("Finish detect side");
-    SetSteering(0);
-    Serial.println("Begin straight until line");
-
+    SetSpeed(1);
+    delay(100);
     while (1)
     {
-        straight();
-        SetSpeed(compute_speed);
-        SetSteering(compute_steering);
-        delay(20);
-        if (checkLine(0))
+        SetSpeed(0.4);
+        SetSteering(-1);
+        delay(50);
+        if (ir_sensing(IR_R) <= detect_ir)
         {
-            SetSpeed(0);
-            delay(3000);
+            SetSteering(1);
+            SetSpeed(-0.5);
+            delay(200);
+            continue;
+        }
+        else if (ir_sensing(IR_L) <= detect_ir)
+        {
             break;
         }
     }
-    Serial.println("Finish until line");
-    SetSpeed(-0.25);
+    SetSpeed(-0.5);
+    SetSteering(-1);
+    delay(120);
+
     SetSteering(0);
-    delay(1000);
-
-    while (1)
+    while (ir_sensing(IR_R) > detect_ir or ir_sensing(IR_L) > detect_ir)
     {
-        SetSpeed(-0.25);
-        SetSteering(0);
-        delay(30);
-
-        if (checkLine(0))
-        {
-            SetSpeed(0);
-            delay(3000);
-            break;
-        }
+        SetSpeed(-0.3);
     }
-    Serial.println("Finish parking");
+    SetSpeed(0);
+    SetSteering(0);
+    delay(2000);
+    SetSpeed(0.5);
+    delay(200);
 }
 
 void avoid_collision()
 {
-    SetSpeed(0.5);
+    SetSpeed(1);
     SetSteering(0);
-    delay(100);
+    delay(180);
 
     while (!(checkLine(IR_L)))
     {
+        SetSpeed(0.5);
         SetSteering(-1);
     }
     SetSpeed(-0.5);
     SetSteering(0);
     delay(200);
     angle_limit = 75;
-    while (!(GetDistance(FC_TRIG, FC_ECHO) <= 200 && GetDistance(L_TRIG, L_ECHO) <= 200 && GetDistance(R_TRIG, R_ECHO) <= 200))
+
+    while (!(GetDistance(FC_TRIG, FC_ECHO) <= 200 && GetDistance(L_TRIG, L_ECHO) <= 200))
     {
         if (ir_sensing(IR_R) >= detect_ir && ir_sensing(IR_L) >= detect_ir) //차선이 검출되지 않을 경우 직진
         {
@@ -406,6 +377,7 @@ void avoid_collision()
 void finish() // TODO Implement finish() functoin
 {
     // break loop, to finish program.
+    SetSpeed(0);
     exit(0);
 }
 void driving()
@@ -413,10 +385,6 @@ void driving()
 
     compute_steering = cur_steering;
     compute_speed = cur_speed;
-
-    center = GetDistance(FC_TRIG, FC_ECHO);
-    left = GetDistance(L_TRIG, L_ECHO);
-    right = GetDistance(R_TRIG, R_ECHO);
 
     straight();
     SetSpeed(compute_speed);
@@ -428,6 +396,7 @@ void driving()
         SetSteering(0);
         SetSpeed(0); //일시정지(교차로에 정지선이 있기 때문에 무조건 멈춰야 함)
         delay(3000);
+
         SetSpeed(0.3); //초음파 감지 거리가 300 언저리라서 전방의 벽을 인식하려면 조금 앞으로 가는게 안전&정지마찰력때문에 속도는 너무 느리지 않게
         delay(100);
         SetSpeed(0);
@@ -446,13 +415,26 @@ void driving()
             }
         }
         else if (GetDistance(FC_TRIG, FC_ECHO) < 300) //전방에 벽이 느껴질 때 T자 주차구나
+        {
+            Serial.print("T park");
             T_Parking();
+            while (1)
+            {
+                straight();
+                SetSpeed(compute_speed);
+                SetSteering(compute_steering);
+                if (ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir)
+
+                    break;
+            }
+            avoid_collision();
+            finish(); // Exit Program
+        }
     }
 }
 
 void setup()
 {
-
     Serial.begin(9600);
     servo.attach(SERVO1_PIN); // 서보모터 초기화
 
@@ -480,26 +462,9 @@ void setup()
 
     SetSteering(0);
     SetSpeed(0);
-
-    while (1)
-    {
-        while (GetDistance(FC_TRIG, FC_ECHO) > center_detect)
-            if (GetDistance(FC_TRIG, FC_ECHO) <= center_detect)
-                break;
-        break;
-    }
 }
 
 void loop()
 {
-    int start = 0;
-    if (GetDistance(FC_TRIG, FC_ECHO) <= center_detect)
-    {
-        if (GetDistance(FC_TRIG, FC_ECHO) > center_detect)
-        {
-            start++;
-        }
-    }
-    if (start != 0)
-        driving();
+    driving();
 }
