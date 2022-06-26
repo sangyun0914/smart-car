@@ -315,11 +315,14 @@ void T_Parking()
             SetSpeed(0); //다시 정지
         }
 
-        if (GetDistance(R_TRIG, R_ECHO) < 135 && GetDistance(L_TRIG, L_ECHO) < 135)
+        if (checkLine(IR_L))
         {
             break;
         }
     }
+    SetSteering(0.1);
+    SetSpeed(0.1);
+    delay(100);
     Serial.println("Finish detect side");
     SetSteering(0);
     Serial.println("Begin straight until line");
@@ -329,14 +332,18 @@ void T_Parking()
         straight();
         SetSpeed(compute_speed);
         SetSteering(compute_steering);
+        delay(20);
         if (checkLine(0))
         {
             SetSpeed(0);
-            delay(300);
+            delay(3000);
             break;
         }
     }
     Serial.println("Finish until line");
+    SetSpeed(-0.25);
+    SetSteering(0);
+    delay(1000);
 
     while (1)
     {
@@ -359,10 +366,41 @@ void avoid_collision()
     SetSpeed(0.5);
     SetSteering(0);
     delay(100);
-    SetSteering(-1);
-    delay(1100);
+
+    while (!(checkLine(IR_L)))
+    {
+        SetSteering(-1);
+    }
+    SetSpeed(-0.5);
     SetSteering(0);
-    delay(1000);
+    delay(200);
+    angle_limit = 75;
+    while (!(GetDistance(FC_TRIG, FC_ECHO) <= 200 && GetDistance(L_TRIG, L_ECHO) <= 200 && GetDistance(R_TRIG, R_ECHO) <= 200))
+    {
+        if (ir_sensing(IR_R) >= detect_ir && ir_sensing(IR_L) >= detect_ir) //차선이 검출되지 않을 경우 직진
+        {
+            SetSteering(0);
+            SetSpeed(0.5);
+        }
+
+        else if (ir_sensing(IR_R) <= detect_ir) // 오른쪽 차선이 검출된 경우
+        {
+            SetSteering(1);
+            SetSpeed(-0.1);
+            delay(100);
+            SetSteering(-1);
+            SetSpeed(0.05);
+        }
+
+        else if (ir_sensing(IR_L) <= detect_ir) // 왼쪽 차선이 검출된 경우
+        {
+            SetSteering(-1);
+            SetSpeed(-0.1);
+            delay(100);
+            SetSteering(1);
+            SetSpeed(0.05);
+        }
+    }
 }
 
 void finish() // TODO Implement finish() functoin
@@ -445,12 +483,23 @@ void setup()
 
     while (1)
     {
-        if (GetDistance(FC_TRIG, FC_ECHO) > center_detect)
-            break;
+        while (GetDistance(FC_TRIG, FC_ECHO) > center_detect)
+            if (GetDistance(FC_TRIG, FC_ECHO) <= center_detect)
+                break;
+        break;
     }
 }
 
 void loop()
 {
-    driving();
+    int start = 0;
+    if (GetDistance(FC_TRIG, FC_ECHO) <= center_detect)
+    {
+        if (GetDistance(FC_TRIG, FC_ECHO) > center_detect)
+        {
+            start++;
+        }
+    }
+    if (start != 0)
+        driving();
 }
