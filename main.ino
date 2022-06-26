@@ -214,7 +214,7 @@ void straight()
     if (ir_sensing(IR_R) >= detect_ir && ir_sensing(IR_L) >= detect_ir) //차선이 검출되지 않을 경우 직진
     {
         compute_steering = 0;
-        compute_speed = 1;
+        compute_speed = 0.5;
     }
 
     else if (ir_sensing(IR_R) <= detect_ir) // 오른쪽 차선이 검출된 경우
@@ -247,7 +247,7 @@ void ParallelParking()
         SetSteering(0);
         SetSpeed(-0.5);
     }
-    delay(300);
+    delay(200);
 
     while (true) // Move until right sensor detects wall
     {
@@ -273,16 +273,25 @@ void ParallelParking()
         }
     }
 
-    SetSteering(0);
+    SetSteering(0.2);
     SetSpeed(-0.5);
     delay(900);
 
     SetSpeed(0);
     delay(2000);
 
-    SetSpeed(0.5);
-    SetSteering(-0.7);
-    delay(200);
+    while (!(checkLine(IR_L)))
+    {
+        SetSpeed(0.5);
+        SetSteering(-1);
+    }
+    SetSteering(-1);
+    SetSpeed(-0.3);
+    delay(800);
+    /*SetSpeed(0.5);
+    SetSteering(1);
+    delay(400);
+    */
 }
 
 void T_Parking()
@@ -305,15 +314,7 @@ void T_Parking()
             delay(400);
             SetSpeed(0); //다시 정지
         }
-        else if (ir_sensing(IR_L) <= detect_ir) //왼쪽에서 차선 검출하면 오른쪽으로 살짝 핸들 꺾어서 전진(좌회전 중 왼쪽벽에 부딪치지 않게)
-        {
-            SetSpeed(0); //우선 정지
-            delay(300);
-            SetSteering(0.3); //오른쪽으로 살짝 틀어서 전진
-            SetSpeed(0.5);
-            delay(300);
-            SetSpeed(0);
-        }
+
         if (GetDistance(R_TRIG, R_ECHO) < 135 && GetDistance(L_TRIG, L_ECHO) < 135)
         {
             break;
@@ -371,6 +372,7 @@ void finish() // TODO Implement finish() functoin
 }
 void driving()
 {
+
     compute_steering = cur_steering;
     compute_speed = cur_speed;
 
@@ -384,9 +386,10 @@ void driving()
 
     if (checkLine(0)) // 양쪽 차선이 검출된 경우=>정지선 또는 차선과 정지선을 모두 걸친 경우
     {
+        Serial.println("Detected Line!");
         SetSteering(0);
         SetSpeed(0); //일시정지(교차로에 정지선이 있기 때문에 무조건 멈춰야 함)
-        delay(1000);
+        delay(3000);
         SetSpeed(0.3); //초음파 감지 거리가 300 언저리라서 전방의 벽을 인식하려면 조금 앞으로 가는게 안전&정지마찰력때문에 속도는 너무 느리지 않게
         delay(100);
         SetSpeed(0);
@@ -399,30 +402,13 @@ void driving()
             if (GetDistance(L_TRIG, L_ECHO) < 200) //왼쪽에서 벽이 감지되면 평행주차, 감지되지 않으면 교차로 진입(그대로 직진)
             {
                 SetSpeed(0);
+                Serial.println("Parallel Park!");
+
                 ParallelParking();
-            }
-
-            else
-            {
-                delay(3000);
-                Serial.print("Straight");
-
-                straight();
             }
         }
         else if (GetDistance(FC_TRIG, FC_ECHO) < 300) //전방에 벽이 느껴질 때 T자 주차구나
-        {
             T_Parking();
-
-            if (checkLine(0)) //다시 정지선으로 돌아와서 T자 주차 시작
-            {
-                SetSpeed(0);
-                delay(500);
-                Serial.print("Avoid collision");
-
-                avoid_collision();
-            }
-        }
     }
 }
 
