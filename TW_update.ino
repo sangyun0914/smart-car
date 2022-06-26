@@ -310,7 +310,7 @@ void T_Parking()
       if (ir_sensing(IR_R) <= detect_ir){
         SetSteering(1);
         SetSpeed(-0.5);
-        delay(100);
+        delay(200);
         continue;
         }
       else if (ir_sensing(IR_L) <= detect_ir){
@@ -550,9 +550,12 @@ void driving()
                SetSpeed(compute_speed);
                SetSteering(compute_steering);
                if(ir_sensing(IR_R) <= detect_ir && ir_sensing(IR_L) <= detect_ir)
-                 avoid_collision(); 
+               {  
+                  break;
+               }
               }
               
+              avoid_collision();
             }
             
     }
