@@ -61,7 +61,7 @@ int wholenote = (60000 * 4) / tempo;
 int divider = 0, noteDuration = 0;
 
 // 자동차 튜닝 파라미터 =====================================================================
-int detect_ir = 26; // 검출선이 흰색과 검정색 비교
+int detect_ir = 27; // 검출선이 흰색과 검정색 비교
 
 int punch_pwm = 200; // 정지 마찰력 극복 출력 (0 ~ 255)
 int punch_time = 50; // 정지 마찰력 극복 시간 (단위 msec)
@@ -401,7 +401,7 @@ void avoid_collision()
     delay(200);
     angle_limit = 75;
 
-    while (!(GetDistance(FC_TRIG, FC_ECHO) <= 200 && GetDistance(L_TRIG, L_ECHO) <= 200))
+    while (!(GetDistance(FC_TRIG, FC_ECHO) <= 50 && GetDistance(L_TRIG, L_ECHO) <= 200))
     {
         if (ir_sensing(IR_R) >= detect_ir && ir_sensing(IR_L) >= detect_ir) //차선이 검출되지 않을 경우 직진
         {
@@ -533,3 +533,11 @@ void loop()
     if (state != 0)
         driving();
 }
+
+/*
+TODO: check IR sensing detect
+TODO: check offset
+TODO: check front wall length
+
+
+*/
